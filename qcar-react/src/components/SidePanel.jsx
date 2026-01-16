@@ -16,7 +16,7 @@ const SidePanel = ({ profile, isOpen }) => {
                         width: '400px',
                         height: '100vh',
                         background: 'rgba(5, 5, 5, 0.95)',
-                        borderLeft: '1px solid #64ffda',
+                        borderLeft: '1px solid #89a783',
                         backdropFilter: 'blur(10px)',
                         padding: '80px 40px',
                         zIndex: 1000,
@@ -30,7 +30,7 @@ const SidePanel = ({ profile, isOpen }) => {
                             width: '100px',
                             height: '100px',
                             borderRadius: '50%',
-                            background: 'linear-gradient(135deg, #64ffda 0%, #1d4f40 100%)',
+                            background: 'linear-gradient(135deg, #89a783 0%, #1d4f40 100%)',
                             marginBottom: '2rem',
                             display: 'flex',
                             alignItems: 'center',
@@ -44,9 +44,9 @@ const SidePanel = ({ profile, isOpen }) => {
                     )}
 
                     <h2 style={{ fontSize: '2rem', color: '#fff', marginBottom: '0.5rem' }}>{profile.name}</h2>
-                    <h3 style={{ fontSize: '1rem', color: '#64ffda', marginBottom: '2rem', textTransform: 'uppercase', letterSpacing: '0.1em' }}>{profile.role}</h3>
+                    <h3 style={{ fontSize: '1rem', color: '#89a783', marginBottom: '2rem', textTransform: 'uppercase', letterSpacing: '0.1em' }}>{profile.role}</h3>
 
-                    <div style={{ width: '50px', height: '2px', background: '#64ffda', marginBottom: '2rem' }}></div>
+                    <div style={{ width: '50px', height: '2px', background: '#89a783', marginBottom: '2rem' }}></div>
 
                     <p style={{ lineHeight: 1.8, fontSize: '1rem', opacity: 0.8, marginBottom: '2rem' }}>
                         {profile.description}

@@ -82,7 +82,7 @@ const ProfileCard = ({ profile, index, setActiveProfile, setCoords, isMobile }) 
                     width: '60px',
                     height: '60px',
                     borderRadius: '50%',
-                    background: 'linear-gradient(135deg, #64ffda 0%, #1d4f40 100%)',
+                    background: 'linear-gradient(135deg, #89a783 0%, #1d4f40 100%)',
                     marginBottom: '1rem',
                     display: 'flex',
                     alignItems: 'center',
@@ -93,7 +93,7 @@ const ProfileCard = ({ profile, index, setActiveProfile, setCoords, isMobile }) 
                 }}>
                     {profile.name.charAt(0)}
                 </div>
-                <h2 style={{ fontSize: '1.5rem', margin: '0 0 0.5rem', color: '#64ffda' }}>{profile.name}</h2>
+                <h2 style={{ fontSize: '1.5rem', margin: '0 0 0.5rem', color: '#89a783' }}>{profile.name}</h2>
                 <h3 style={{ fontSize: '0.9rem', opacity: 0.7, textTransform: 'uppercase', letterSpacing: '0.1em', marginBottom: expanded ? '1rem' : '0' }}>{profile.role}</h3>
 
                 {/* Render description inline on mobile if expanded, or always on desktop if that was the original design? 

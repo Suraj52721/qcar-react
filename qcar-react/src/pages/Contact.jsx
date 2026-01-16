@@ -66,8 +66,8 @@ const Contact = () => {
                         style={{
                             padding: '1rem 2rem',
                             background: 'transparent',
-                            border: '1px solid #64ffda',
-                            color: '#64ffda',
+                            border: '1px solid #89a783',
+                            color: '#89a783',
                             fontFamily: 'inherit',
                             fontSize: '1rem',
                             cursor: 'pointer',
@@ -88,7 +88,7 @@ const Contact = () => {
                 </form>
 
                 <div style={{ marginTop: '3rem', opacity: 0.6, fontSize: '0.9rem' }}>
-                    <p>Or email us directly at:<br /><a href="mailto:contact@qcar.org" style={{ color: '#64ffda', textDecoration: 'none' }}>contact@qcar.org</a></p>
+                    <p>Or email us directly at:<br /><a href="mailto:contact@qcar.org" style={{ color: '#89a783', textDecoration: 'none' }}>contact@qcar.org</a></p>
                 </div>
             </motion.div>
         </div>

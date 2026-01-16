@@ -20,7 +20,7 @@ const ConnectionWire = ({ start, end, active }) => {
         }}>
             <path
                 d={pathD}
-                stroke="#64ffda"
+                stroke="#89a783"
                 strokeWidth="2"
                 fill="none"
                 strokeLinecap="round"
@@ -28,11 +28,11 @@ const ConnectionWire = ({ start, end, active }) => {
                 animate={{ pathLength: 1, opacity: 0.6 }}
                 transition={{ duration: 0.3 }}
                 style={{
-                    filter: 'drop-shadow(0 0 5px #64ffda)'
+                    filter: 'drop-shadow(0 0 5px #89a783)'
                 }}
             />
-            <circle cx={start.x} cy={start.y} r="4" fill="#64ffda" />
-            <circle cx={end.x} cy={end.y} r="4" fill="#64ffda" />
+            <circle cx={start.x} cy={start.y} r="4" fill="#89a783" />
+            <circle cx={end.x} cy={end.y} r="4" fill="#89a783" />
         </svg>
     );
 };

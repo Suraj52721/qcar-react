@@ -90,7 +90,7 @@ const ResearchCard = ({ paper, index, setActivePaper, setCoords, isMobile }) => 
                 borderLeft: '2px solid transparent'
             }}>
                 <h2 style={{ fontSize: '1.2rem', margin: '0 0 0.5rem', color: '#fff' }}>{paper.title}</h2>
-                <div style={{ fontSize: '0.9rem', opacity: 0.6, color: '#64ffda', marginBottom: expanded ? '0.5rem' : '0' }}>{paper.journal}, {paper.year}</div>
+                <div style={{ fontSize: '0.9rem', opacity: 0.6, color: '#89a783', marginBottom: expanded ? '0.5rem' : '0' }}>{paper.journal}, {paper.year}</div>
 
                 <AnimatePresence>
                     {isMobile && expanded && (

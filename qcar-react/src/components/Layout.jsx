@@ -1,13 +1,14 @@
 import { Outlet } from 'react-router-dom';
 import Navbar from './Navbar';
 import Footer from './Footer';
-import ParticleBackground from './ParticleBackground';
+import RippleBackground from './RippleBackground';
 import CursorGlow from './CursorGlow';
+
 
 const Layout = () => {
     return (
         <>
-            <ParticleBackground />
+            <RippleBackground />
             <CursorGlow />
             <Navbar />
             <main style={{ position: 'relative', zIndex: 1 }}>

@@ -1,5 +1,6 @@
 import { useRef, useState, useEffect, useLayoutEffect } from 'react';
 import { motion, useScroll, useTransform, useSpring } from 'framer-motion';
+import logo from '../assets/image.png';
 
 const Letter = ({ char, index, isInitial, totalIndex, scrollYProgress }) => {
     // Random scatter for non-initials
@@ -7,50 +8,18 @@ const Letter = ({ char, index, isInitial, totalIndex, scrollYProgress }) => {
     const randomY = (Math.random() - 0.5) * 800;
     const randomRotate = (Math.random() - 0.5) * 360;
 
-    // Target positions for initials (centering them "QCAR")
-    // Layout: Q C A R centered
-    // Basic centering logic relative to their original position is hard without accurate measurements.
-    // Easier approach: Move them all to a fixed center point, but offset slightly by their index in "QCAR".
-
-    // Q C A R indices in the final word: 0, 1, 2, 3
-    // We can guess approximate offsets: -1.5em, -0.5em, 0.5em, 1.5em
-
     let targetX = 0;
     let targetY = 0; // Center vertical
 
     if (isInitial) {
-        // Map char to specific 'slot' in QCAR
-        const slotMap = { 'Q': -120, 'C': -40, 'A': 40, 'R': 120 }; // pixels approx
-        // Note: There are multiple 'C's, 'A's, 'R's. We need to identify WHICH one it is.
-        // We'll pass a 'targetSlot' prop if it's the *correct* initial.
+        const slotMap = { 'Q': -120, 'C': -40, 'A': 40, 'R': 120 };
     }
-
-    // Animation values
-    // 0 scroll -> 0 displacement
-    // 1 scroll -> target displacement
 
     // For non-initials:
     const xScatter = useTransform(scrollYProgress, [0, 0.4], [0, randomX]);
     const yScatter = useTransform(scrollYProgress, [0, 0.4], [0, randomY]);
     const opacityScatter = useTransform(scrollYProgress, [0, 0.2], [1, 0]);
     const rotateScatter = useTransform(scrollYProgress, [0, 0.4], [0, randomRotate]);
-
-    // For initials:
-    // We need to calculate how far to move to get to 'center'. 
-    // Since we are in a sticky container, we can use absolute positioning or translates.
-    // IF we make the initials 'absolute' positioned at the end state? No, harder to layout initially.
-
-    // Alternative:
-    // Use `useTransform` to move from '0' (natural flow) to 'Center - CurrentPosition'.
-    // Determining 'CurrentPosition' dynamically is tricky in React without refs for every letter.
-
-    // Simplified Visual Hack:
-    // Hide the original initials at end of scroll.
-    // Show a new "QCAR" at center that fades in? 
-    // User asked for: "initials Q C A R moves in such a way that it comes in center".
-
-    // Let's try to make them move.
-    // If we assume the container is centered, we can estimate.
 
     return (
         <motion.span
@@ -90,17 +59,6 @@ const AnimatedWord = ({ word, wordIndex, scrollYProgress }) => {
             {word.split('').map((char, charIndex) => {
                 const isTargetInitial = qcarMap.some(m => m.wordIndex === wordIndex && m.charIndex === charIndex);
 
-                // Specialized transform for initials
-                // This is an approximation. Ideally we'd measure.
-                // Q is at approx -300px relative to center?
-                // We'll use large approximations to converge 'near' center.
-
-                // Let's rely on a simplified 'converge' where we don't know exact start, 
-                // but we know we want them to end up 'tightly packed'.
-
-                // We will handle Initials separately in the main component to keep it clean?
-                // Or handle here.
-
                 return (
                     <LetterWrapper
                         key={charIndex}
@@ -130,13 +88,8 @@ const LetterWrapper = ({ char, isInitial, initialPos, scrollYProgress }) => {
         const measure = () => {
             if (!spanRef.current) return;
 
-            // We use offsetLeft/Top which are relative to the nearest positioned ancestor.
-            // Our container is 'position: sticky', so it catches these.
-            // Since the container is 100vh/100vw and pinned to top-left, 
-            // offsetLeft/Top roughly equals viewport X/Y (if no scrolling within container).
-
             const parent = spanRef.current.offsetParent;
-            if (!parent) return; // Not visible yet
+            if (!parent) return;
 
             const startX = spanRef.current.offsetLeft + (spanRef.current.offsetWidth / 2);
             const startY = spanRef.current.offsetTop + (spanRef.current.offsetHeight / 2);
@@ -166,16 +119,9 @@ const LetterWrapper = ({ char, isInitial, initialPos, scrollYProgress }) => {
             });
         };
 
-        // Measure immediately
         measure();
-
-        // Measure after fonts load (crucial for "production" build where fonts might strict layout)
         document.fonts.ready.then(measure);
-
-        // Measure on resize
         window.addEventListener('resize', measure);
-
-        // Safety: Check again after a short delay for any framework layout shifts
         const timer = setTimeout(measure, 1000);
 
         return () => {
@@ -192,8 +138,7 @@ const LetterWrapper = ({ char, isInitial, initialPos, scrollYProgress }) => {
     const xConverge = useTransform(scrollYProgress, [0, 0.8], [0, delta.x]);
     const yConverge = useTransform(scrollYProgress, [0, 0.8], [0, delta.y]);
 
-    // Smooth color transition
-    const color = useTransform(scrollYProgress, [0.4, 0.8], ['#ffffff', '#64ffda']);
+    const color = useTransform(scrollYProgress, [0.4, 0.8], ['#ffffff', '#89a783']);
     const scale = useTransform(scrollYProgress, [0, 0.8], [1, 1]);
 
     if (isInitial) {
@@ -237,6 +182,10 @@ const Home = () => {
         offset: ["start start", "end end"]
     });
 
+    const isMobile = window.innerWidth < 768;
+    const logoSize = isMobile ? '100px' : '150px'; // Increased size
+    const logoOffset = isMobile ? '-130px' : '-200px'; // Adjusted offset for larger logo
+
     return (
         <div ref={containerRef} style={{ height: '300vh', position: 'relative' }}>
             <div style={{
@@ -247,14 +196,32 @@ const Home = () => {
                 overflow: 'hidden',
                 display: 'flex',
                 flexDirection: 'column',
-                justifyContent: 'flex-start' // Match original alignment
+                justifyContent: 'flex-start'
             }}>
+                {/* Logo that appears when QCAR forms */}
+                <motion.img
+                    src={logo}
+                    alt="QCAR Logo"
+                    style={{
+                        position: 'absolute',
+                        top: '50%',
+                        left: '50%',
+                        width: logoSize,
+                        height: 'auto',
+                        x: '-50%',
+                        y: useTransform(scrollYProgress, [0.6, 0.8], [parseInt(logoOffset) - 50, parseInt(logoOffset)]),
+                        opacity: useTransform(scrollYProgress, [0.6, 0.8], [0, 1]),
+                        zIndex: 30,
+                        pointerEvents: 'none'
+                    }}
+                />
+
                 <h1 style={{
-                    fontSize: 'clamp(3rem, 8vw, 8rem)',
+                    fontSize: 'clamp(2.5rem, 6vw, 6rem)',
                     fontWeight: 'bold',
                     lineHeight: 1.1,
                     letterSpacing: '-0.02em',
-                    textShadow: '0 0 30px rgba(100,255,218,0.15)',
+                    textShadow: '0 0 30px rgba(137,167,131,0.15)',
                     margin: 0,
                     color: '#fff',
                     display: 'flex',
@@ -275,7 +242,7 @@ const Home = () => {
                         opacity: useTransform(scrollYProgress, [0, 0.2], [1, 0]),
                         height: '1px',
                         width: '120px',
-                        background: 'linear-gradient(to right, rgba(100,255,218,0.5), transparent)',
+                        background: 'linear-gradient(to right, rgba(137,167,131,0.5), transparent)',
                         margin: '48px 0'
                     }}
                 />
@@ -286,6 +253,28 @@ const Home = () => {
                 >
                     <div className="acronym" style={{ fontSize: '1.5rem' }}>QCAR</div>
                     <div className="tagline" style={{ fontSize: '0.75rem', opacity: 0.4, marginTop: '8px' }}>Exploring computation at the edge of physics</div>
+                </motion.div>
+
+                {/* New Content appearing after QCAR formation */}
+                <motion.div
+                    style={{
+                        position: 'absolute',
+                        top: '55%', // Moved up from 60% to decrease space
+                        left: 0,
+                        right: 0,
+                        textAlign: 'center',
+                        padding: '0 20px',
+                        opacity: useTransform(scrollYProgress, [0.7, 0.9], [0, 1]),
+                        y: useTransform(scrollYProgress, [0.7, 0.9], [20, 0]),
+                        pointerEvents: useTransform(scrollYProgress, v => v > 0.8 ? 'auto' : 'none')
+                    }}
+                >
+                    <h2 style={{ fontSize: '2rem', marginBottom: '1rem', color: '#89a783' }}>Pioneering the Quantum Future</h2>
+                    <p style={{ maxWidth: '600px', margin: '0 auto', fontSize: '1.1rem', lineHeight: '1.6', color: 'rgba(255,255,255,0.8)' }}>
+                        We are a dedicated team of researchers and engineers pushing the boundaries of quantum algorithms.
+                        Our work bridges the gap between theoretical quantum physics and practical computational solutions,
+                        paving the way for the next generation of computing.
+                    </p>
                 </motion.div>
             </div>
 
