@@ -30,6 +30,7 @@ const Navbar = () => {
                     <Link to="/research">Research</Link>
                     <Link to="/team">Team</Link>
                     <Link to="/about">About</Link>
+                    <Link to="/dashboard">Dashboard</Link>
                 </div>
 
                 {/* Mobile Menu Icon */}
@@ -46,6 +47,7 @@ const Navbar = () => {
                 <Link to="/research" onClick={closeMenu}>Research</Link>
                 <Link to="/team" onClick={closeMenu}>Team</Link>
                 <Link to="/about" onClick={closeMenu}>About</Link>
+                <Link to="/dashboard" onClick={closeMenu}>Dashboard</Link>
             </div>
         </>
     );
