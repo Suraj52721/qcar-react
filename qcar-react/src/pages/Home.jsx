@@ -8,7 +8,7 @@ import useIsMobile from '../hooks/useIsMobile';
 import imscLogo from '../assets/logo/imsc-logo.png';
 import jncasrLogo from '../assets/logo/jncasr-logo.png';
 import uodLogo from '../assets/logo/_uod-logo.png';
-import pecslabLogo from '../assets/logo/pecslab.jpg';
+import pecslabLogo from '../assets/logo/pecslab.png';
 
 // Content for the initials
 const qcarData = {
@@ -674,7 +674,7 @@ const Home = () => {
                 <motion.div
                     style={{
                         position: 'absolute',
-                        top: '30vh',
+                        top: '10vh',
                         left: 0,
                         width: '100vw',
                         height: '85vh',
