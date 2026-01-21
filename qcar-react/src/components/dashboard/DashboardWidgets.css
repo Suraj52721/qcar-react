@@ -1,0 +1,689 @@
+/* Global Font Inheritance */
+.dashboard-widget-card,
+input,
+textarea,
+button,
+select {
+    font-family: 'Outfit', sans-serif;
+}
+
+/* 
+   REMOVED CARD STYLING 
+   Because the new 'AppBox' handles the container.
+   This class now just ensures full width/height.
+*/
+.dashboard-widget-card {
+    background: transparent;
+    border: none;
+    padding: 0;
+    box-shadow: none;
+    display: flex;
+    flex-direction: column;
+    height: 100%;
+    width: 100%;
+}
+
+.dashboard-widget-card .widget-header {
+    display: flex;
+    justify-content: flex-end;
+    margin-bottom: 0;
+    height: 40px;
+}
+
+.dashboard-widget-card .widget-header>div:first-child {
+    display: none;
+}
+
+/* Clock Specifics */
+.clock-container {
+    text-align: center;
+    justify-content: center;
+}
+
+.clock-time {
+    font-size: 3rem;
+    font-weight: 700;
+    font-family: 'Space Grotesk', sans-serif;
+    color: #e6f1ff;
+    line-height: 1;
+    text-shadow: 0 0 30px rgba(100, 255, 218, 0.2);
+}
+
+.clock-date {
+    font-size: 0.9rem;
+    color: #8892b0;
+    font-weight: 500;
+    text-transform: uppercase;
+    letter-spacing: 2px;
+    font-family: 'Space Grotesk', sans-serif;
+}
+
+/* Quick Note Specifics */
+.note-container {
+    height: 100%;
+    min-height: 0;
+}
+
+.note-textarea {
+    flex: 1;
+    background: rgba(255, 255, 255, 0.03);
+    border: 1px solid rgba(255, 255, 255, 0.05);
+    border-radius: 16px;
+    padding: 1rem;
+    color: #e6f1ff;
+    resize: none;
+    outline: none;
+    font-size: 0.9rem;
+    line-height: 1.5;
+    transition: all 0.2s;
+}
+
+.note-textarea:focus {
+    border-color: #64ffda;
+    background: rgba(255, 255, 255, 0.05);
+}
+
+.save-status {
+    font-size: 0.7rem;
+    color: #64ffda;
+    text-align: right;
+    margin-top: 4px;
+    height: 15px;
+}
+
+/* Todo List Specifics */
+.todo-container {
+    height: 100%;
+    min-height: 0;
+}
+
+.todo-input-form {
+    display: flex;
+    gap: 8px;
+    margin-bottom: 15px;
+}
+
+.todo-input {
+    flex: 1;
+    background: rgba(255, 255, 255, 0.03);
+    border: 1px solid rgba(255, 255, 255, 0.05);
+    border-radius: 8px;
+    padding: 8px 12px;
+    color: #e6f1ff;
+    outline: none;
+    font-size: 0.85rem;
+}
+
+.todo-list {
+    flex: 1;
+    overflow-y: auto;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    padding-right: 2px;
+}
+
+.todo-item {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 10px;
+    background: rgba(255, 255, 255, 0.02);
+    border-radius: 8px;
+    transition: all 0.2s;
+}
+
+.todo-item:hover {
+    background: rgba(255, 255, 255, 0.05);
+}
+
+.todo-text {
+    flex: 1;
+    font-size: 0.85rem;
+    color: #ccd6f6;
+}
+
+
+/* Timeline Specifics */
+.timeline-container {
+    padding: 2rem 0;
+    overflow-x: auto;
+    overflow-y: hidden;
+    height: 100%;
+    display: flex;
+    align-items: center;
+    min-height: 0;
+    position: relative;
+    /* Hide scrollbar for cleaner look */
+    scrollbar-width: thin;
+    scrollbar-color: rgba(100, 255, 218, 0.2) transparent;
+}
+
+.timeline-container::-webkit-scrollbar {
+    height: 6px;
+}
+
+.timeline-container::-webkit-scrollbar-track {
+    background: rgba(255, 255, 255, 0.02);
+}
+
+.timeline-container::-webkit-scrollbar-thumb {
+    background: rgba(100, 255, 218, 0.3);
+    border-radius: 3px;
+}
+
+.timeline-line-center {
+    position: absolute;
+    top: 50%;
+    left: 0;
+    height: 2px;
+    background: linear-gradient(90deg,
+            rgba(100, 255, 218, 0) 0%,
+            rgba(100, 255, 218, 0.5) 15%,
+            rgba(100, 255, 218, 0.5) 85%,
+            rgba(100, 255, 218, 0) 100%);
+    transform: translateY(-50%);
+    box-shadow: 0 0 10px rgba(100, 255, 218, 0.3);
+    z-index: 0;
+}
+
+.timeline-items {
+    display: flex;
+    padding: 0 2rem;
+    gap: 0;
+    /* Gap handled by item layout */
+    position: relative;
+    z-index: 1;
+    min-width: max-content;
+}
+
+.timeline-item {
+    position: relative;
+    width: 200px;
+    /* Fixed width per item */
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    min-height: 200px;
+}
+
+/* Alternating layout */
+.timeline-item.top .timeline-node {
+    margin-bottom: 20px;
+}
+
+.timeline-item.bottom .timeline-node {
+    margin-top: 20px;
+}
+
+.timeline-item.top .timeline-content {
+    margin-bottom: 40px;
+    /* Push content up */
+    transform: translateY(-20px);
+}
+
+.timeline-item.bottom .timeline-content {
+    margin-top: 40px;
+    /* Push content down */
+    transform: translateY(20px);
+}
+
+/* The Node (Particle) */
+.timeline-node {
+    width: 16px;
+    height: 16px;
+    border-radius: 50%;
+    background: #0d0d0d;
+    border: 2px solid #333;
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    z-index: 2;
+    transition: all 0.3s ease;
+}
+
+/* Status variants for Nodes */
+.timeline-item.completed .timeline-node {
+    background: #64ffda;
+    border-color: #64ffda;
+    box-shadow: 0 0 15px rgba(100, 255, 218, 0.6);
+}
+
+.timeline-item.in-progress .timeline-node {
+    background: #0d0d0d;
+    border-color: #64ffda;
+    box-shadow: 0 0 10px rgba(100, 255, 218, 0.2);
+    animation: pulse-node 2s infinite;
+}
+
+.timeline-item.pending .timeline-node {
+    background: #0d0d0d;
+    border-color: #333;
+}
+
+@keyframes pulse-node {
+    0% {
+        box-shadow: 0 0 0 0 rgba(100, 255, 218, 0.4);
+    }
+
+    70% {
+        box-shadow: 0 0 0 6px rgba(100, 255, 218, 0);
+    }
+
+    100% {
+        box-shadow: 0 0 0 0 rgba(100, 255, 218, 0);
+    }
+}
+
+/* The Connector Line (Vertical) */
+.timeline-item::before {
+    content: '';
+    position: absolute;
+    left: 50%;
+    width: 1px;
+    background: rgba(255, 255, 255, 0.1);
+    z-index: 0;
+}
+
+.timeline-item.top::before {
+    bottom: 50%;
+    height: 60px;
+    /* Connects node to content roughly */
+    top: auto;
+}
+
+.timeline-item.bottom::before {
+    top: 50%;
+    height: 60px;
+    bottom: auto;
+}
+
+/* The Content Card */
+.timeline-content {
+    background: rgba(20, 20, 20, 0.8);
+    backdrop-filter: blur(5px);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    padding: 1rem;
+    border-radius: 12px;
+    width: 180px;
+    text-align: left;
+    transition: all 0.3s ease;
+}
+
+.timeline-content:hover {
+    border-color: rgba(100, 255, 218, 0.3);
+    background: rgba(30, 30, 30, 0.9);
+    transform: translateY(var(--tw-translate-y, 0)) scale(1.05);
+    z-index: 10;
+}
+
+.timeline-content .timeline-date {
+    font-size: 0.7rem;
+    color: #64ffda;
+    font-family: 'Space Grotesk', monospace;
+    opacity: 0.8;
+    margin-bottom: 4px;
+}
+
+.timeline-content .timeline-title {
+    font-size: 0.9rem;
+    font-weight: 600;
+    color: #e6f1ff;
+    margin-bottom: 8px;
+    line-height: 1.3;
+}
+
+.timeline-tags {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 4px;
+}
+
+.timeline-tag {
+    font-size: 0.65rem;
+    padding: 2px 6px;
+    border-radius: 4px;
+    background: rgba(255, 255, 255, 0.05);
+    color: #8892b0;
+}
+
+/* Floating Add Button in Timeline */
+.timeline-add-btn {
+    position: absolute;
+    top: 1rem;
+    right: 1rem;
+    z-index: 10;
+    background: rgba(100, 255, 218, 0.1);
+    color: #64ffda;
+    border: 1px solid rgba(100, 255, 218, 0.2);
+    padding: 6px 12px;
+    border-radius: 20px;
+    font-size: 0.75rem;
+    font-weight: 600;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    transition: all 0.2s;
+}
+
+.timeline-add-btn:hover {
+    background: rgba(100, 255, 218, 0.2);
+    transform: translateY(-1px);
+}
+
+/* ===========================
+   CHAT STYLES (Restored)
+   =========================== */
+
+
+/* ===========================
+   CHAT STYLES (Restored)
+   =========================== */
+.chat-container {
+    display: flex;
+    flex-direction: column;
+    height: 100%;
+    width: 100%;
+    overflow: hidden;
+    position: relative;
+    margin: 0;
+    padding: 0;
+}
+
+.messages-list {
+    flex: 1;
+    padding: 1rem;
+    overflow-y: auto;
+    display: flex;
+    flex-direction: column;
+    gap: 0.8rem;
+}
+
+.messages-list::-webkit-scrollbar {
+    width: 4px;
+}
+
+.messages-list::-webkit-scrollbar-track {
+    background: transparent;
+}
+
+.messages-list::-webkit-scrollbar-thumb {
+    background: rgba(255, 255, 255, 0.1);
+    border-radius: 2px;
+}
+
+.message-wrapper {
+    display: flex;
+    flex-direction: column;
+    max-width: 85%;
+    position: relative;
+    margin-bottom: 2px;
+}
+
+.message-wrapper.sent {
+    align-self: flex-end;
+    align-items: flex-end;
+}
+
+.message-wrapper.received {
+    align-self: flex-start;
+    align-items: flex-start;
+}
+
+.message-header-row {
+    display: flex;
+    align-items: baseline;
+    gap: 6px;
+    margin-bottom: 4px;
+    opacity: 0.7;
+}
+
+.message-sender-name {
+    font-size: 0.75rem;
+    font-weight: 600;
+    color: #e6f1ff;
+}
+
+.message-timestamp {
+    font-size: 0.65rem;
+    color: #8892b0;
+    font-family: monospace;
+}
+
+.message-bubble {
+    padding: 0.7rem 1rem;
+    border-radius: 18px;
+    position: relative;
+    word-wrap: break-word;
+    font-size: 0.9rem;
+    line-height: 1.5;
+    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
+    max-width: 100%;
+}
+
+.message-bubble.sent {
+    background: #e6f1ff;
+    color: #0d0d0d;
+    border-bottom-right-radius: 4px;
+}
+
+.message-bubble.received {
+    background: rgba(255, 255, 255, 0.1);
+    color: #e6f1ff;
+    border: 1px solid rgba(255, 255, 255, 0.05);
+    border-bottom-left-radius: 4px;
+}
+
+.chat-input-form {
+    display: flex;
+    padding: 0.8rem 1rem;
+    gap: 0.8rem;
+    align-items: center;
+    background: transparent;
+    border-top: 1px solid rgba(255, 255, 255, 0.05);
+    width: 100%;
+    min-height: 70px;
+}
+
+.chat-input {
+    flex: 1;
+    min-width: 0;
+    padding: 0.8rem 1.2rem;
+    border-radius: 24px;
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    background: rgba(0, 0, 0, 0.3);
+    color: #fff;
+    outline: none;
+    font-size: 0.9rem;
+    transition: all 0.2s;
+}
+
+.chat-input:focus {
+    border-color: #64ffda;
+    background: rgba(0, 0, 0, 0.5);
+}
+
+.icon-btn {
+    background: transparent;
+    border: none;
+    color: #8892b0;
+    padding: 8px;
+    border-radius: 50%;
+    cursor: pointer;
+    transition: all 0.2s;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+    /* CRITICAL */
+}
+
+.icon-btn:hover {
+    color: #e6f1ff;
+    background: rgba(255, 255, 255, 0.05);
+}
+
+.send-btn-icon {
+    background: #e6f1ff;
+    color: #0d0d0d;
+    width: 40px;
+    height: 40px;
+    flex-shrink: 0;
+}
+
+.send-btn-icon:hover {
+    background: #fff;
+    transform: scale(1.05);
+}
+
+.reaction-button {
+    width: 26px;
+    height: 26px;
+    opacity: 0;
+    position: absolute;
+    top: 50%;
+    transform: translateY(-50%);
+    background: #0d0d0d;
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: opacity 0.2s;
+    color: #a8b2d1;
+    z-index: 10;
+}
+
+.message-wrapper:hover .reaction-button {
+    opacity: 1;
+}
+
+.message-wrapper.sent .reaction-button {
+    left: -34px;
+}
+
+.message-wrapper.received .reaction-button {
+    right: -34px;
+}
+
+.reactions-display {
+    display: flex;
+    gap: 4px;
+    margin-top: 4px;
+    margin-left: 2px;
+}
+
+.reaction-pill {
+    background: rgba(255, 255, 255, 0.1);
+    border-radius: 10px;
+    padding: 2px 6px;
+    font-size: 0.7rem;
+    color: #ccc;
+
+    cursor: default;
+}
+
+/* ===========================
+   MODAL STYLES (Added)
+   =========================== */
+.modal-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100vw;
+    height: 100vh;
+    background: rgba(0, 0, 0, 0.7);
+    backdrop-filter: blur(5px);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    z-index: 9999;
+    animation: fadeIn 0.2s ease-out;
+}
+
+.modal-content {
+    background: #111;
+    border: 1px solid rgba(100, 255, 218, 0.2);
+    padding: 2rem;
+    border-radius: 20px;
+    width: 90%;
+    max-width: 400px;
+    box-shadow: 0 10px 40px rgba(0, 0, 0, 0.5);
+    animation: slideUp 0.3s ease-out;
+}
+
+@keyframes fadeIn {
+    from {
+        opacity: 0;
+    }
+
+    to {
+        opacity: 1;
+    }
+}
+
+@keyframes slideUp {
+    from {
+        transform: translateY(20px);
+        opacity: 0;
+    }
+
+    to {
+        transform: translateY(0);
+        opacity: 1;
+    }
+}
+
+.start-meet-btn {
+    background: #64ffda;
+    color: #0d0d0d;
+    border: none;
+    padding: 10px 20px;
+    border-radius: 12px;
+    font-weight: 600;
+    font-size: 0.9rem;
+    cursor: pointer;
+    flex: 1;
+    transition: all 0.2s;
+}
+
+.start-meet-btn:hover {
+    background: #fff;
+    transform: translateY(-2px);
+    box-shadow: 0 5px 15px rgba(100, 255, 218, 0.3);
+}
+
+.modal-close-btn {
+    background: rgba(255, 255, 255, 0.05);
+    color: #8892b0;
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    padding: 10px 20px;
+    border-radius: 12px;
+    font-weight: 600;
+    font-size: 0.9rem;
+    cursor: pointer;
+    transition: all 0.2s;
+}
+
+.modal-close-btn:hover {
+    background: rgba(255, 255, 255, 0.1);
+    color: #fff;
+}
+
+/* ===========================
+   LAB NOTEBOOK STYLES
+   =========================== */
+.notebook-widget-collapsed {
+    height: 100%;
+}
+
+.kanban-widget-collapsed {
+    height: 100%;
+}
+
+.repo-widget-collapsed {
+    height: 100%;
+}

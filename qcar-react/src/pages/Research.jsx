@@ -331,7 +331,7 @@ const Research = () => {
     if (isMobile) {
         return (
             <div style={{ padding: '120px 20px 50px' }}>
-                <h1 style={{ fontSize: '2.5rem', marginBottom: '2rem', fontWeight: 'bold' }}>Research</h1>
+                <h1 style={{ fontSize: '2.5rem', marginBottom: '2rem', fontWeight: 'bold', color: '#fff' }}>Research</h1>
                 {papers.map((paper, i) => (
                     <div key={i} style={{ marginBottom: '1.5rem', background: 'rgba(255,255,255,0.03)', padding: '1.5rem', borderRadius: '20px', border: '1px solid rgba(255,255,255,0.1)' }}>
                         <h2 style={{ fontSize: '1.2rem', color: '#fff' }}>{paper.title}</h2>
@@ -359,7 +359,7 @@ const Research = () => {
                 alignItems: 'center'
             }}>
                 {/* Fixed Title Background */}
-                <div style={{ position: 'absolute', top: '12vh', left: '5vw', zIndex: 10, pointerEvents: 'none' }}>
+                <div style={{ position: 'absolute', top: '15vh', left: '5vw', zIndex: 10, pointerEvents: 'none' }}>
                     <h4 style={{
                         fontSize: '2rem',
                         fontWeight: 'bold',

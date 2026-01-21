@@ -5,6 +5,8 @@ import About from './pages/About';
 import Team from './pages/Team';
 import Research from './pages/Research';
 import Contact from './pages/Contact';
+import Login from './pages/Auth/Login';
+import Dashboard from './pages/Dashboard';
 import './styles/global.css';
 
 function App() {
@@ -18,6 +20,8 @@ function App() {
           <Route path="research" element={<Research />} />
           <Route path="contact" element={<Contact />} />
         </Route>
+        <Route path="/login" element={<Login />} />
+        <Route path="/dashboard" element={<Dashboard />} />
       </Routes>
     </Router>
   );

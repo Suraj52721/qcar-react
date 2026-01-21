@@ -2,12 +2,12 @@ import { motion } from 'framer-motion';
 
 const Contact = () => {
     return (
-        <div style={{ padding: '150px 10vw 50px' }}>
+        <div style={{ padding: '150px 10vw 50px', color: '#fff' }}>
             <motion.h1
                 initial={{ opacity: 0 }}
                 animate={{ opacity: 1 }}
                 transition={{ duration: 1 }}
-                style={{ fontSize: '3rem', marginBottom: '2rem', fontWeight: 'bold' }}
+                style={{ fontSize: '3rem', marginBottom: '2rem', fontWeight: 'bold', color: '#fff' }}
             >
                 Contact Us
             </motion.h1>

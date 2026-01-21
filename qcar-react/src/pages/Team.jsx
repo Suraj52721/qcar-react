@@ -1,100 +1,8 @@
-import { useState, useRef } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import { motion, AnimatePresence, useScroll, useTransform, useSpring } from 'framer-motion';
 import useIsMobile from '../hooks/useIsMobile';
-
-const profiles = [
-    {
-        name: "Dr. S.R. Hassan",
-        role: "Professor",
-        description: "Senior researcher with decades of experience in theoretical physics and condensed matter physics.",
-        background: "Senior researcher with decades of experience in theoretical physics and mathematical optimization. Leading authority in condensed matter physics and quantum systems.",
-        expertise: "Optimal transport theory, Ising models, many-body systems, graph theory, mathematical physics, quantum complexity",
-        currentWork: "Advising on mathematical foundations of quantum optimization and contributing to theoretical frameworks for quantum complexity analysis.",
-        achievements: "Extensive publications in theoretical physics, recognized expert in Ising model solvers, contributions to optimal transport theory"
-    },
-    {
-        name: "Dr. Vikas Chauhan",
-        role: "Professor",
-        description: "Theoretical physicist with expertise in computational methods and statistical mechanics.",
-        background: "Theoretical physicist with expertise in computational methods and statistical mechanics. Extensive experience in density functional theory and dynamical systems.",
-        expertise: "Density functional theory, dynamical mean field theory, statistical mechanics, computational physics, atomic simulations",
-        currentWork: "Providing guidance on theoretical frameworks and computational approaches for quantum system modeling and analysis.",
-        achievements: "Leading researcher in DFT applications, expert in DMFT methods, published extensively in computational physics and statistical mechanics"
-    },
-    {
-        name: "Dr. Vidhyadhiraja",
-        role: "Professor",
-        description: "Expert in DMFT,MOIPT and Computational Physics for Condensed Matter Systems",
-        background: "",
-        expertise: "Expert in DMFT,MOIPT and Computational Physics for Condensed Matter Systems",
-        currentWork: "",
-        achievements: ""
-    },
-    {
-        name: "Lakshya Nagpal",
-        role: "Research Collaborator",
-        description: "Researcher specializing in quantum computing applications and optimization algorithms.",
-        background: "Researcher specializing in quantum computing applications and optimization algorithms. Experience in quantum annealing and molecular simulation.",
-        expertise: "Quantum algorithms, optimization theory, molecular simulation, quantum annealing, fermionic encodings",
-        currentWork: "Developing efficient quantum algorithms for molecular energy calculations and investigating symmetry reductions for quantum annealers.",
-        achievements: "Worked in quantum optimization, collaborated with quantum computing companies, developed fermionic mapping techniques"
-    },
-    {
-        name: "Aditya Kumar",
-        role: "Research Collaborator",
-        description: "Specialist in combinatorial optimization with focus on quantum annealing applications.",
-        background: "Specialist in combinatorial optimization with focus on quantum annealing applications. Strong mathematical background in optimization theory and algorithm design.",
-        expertise: "QUBO formulations, combinatorial optimization, quantum annealing, algorithm design, mathematical optimization",
-        currentWork: "Developing advanced QUBO formulations for complex optimization problems and improving quantum annealing performance through novel encoding techniques.",
-        achievements: "Developed efficient QUBO encodings for real-world problems, improved quantum annealing success rates, published research on optimization algorithms"
-    },
-    {
-        name: "Dr. Divyansh",
-        role: "Research Scientist",
-        description: "Research scientist with expertise in quantum mechanics fundamentals and quantum information theory.",
-        background: "Research scientist with expertise in quantum mechanics fundamentals and quantum information theory. Strong background in theoretical physics and computational methods.",
-        expertise: "Quantum mechanics, entanglement theory, quantum information, quantum speed limits, coherence optimization",
-        currentWork: "Investigating quantum speed limits in many-body systems and developing new metrics for quantum information processing efficiency.",
-        achievements: "Published papers on quantum entanglement characterization, developed novel quantum coherence metrics, contributed to quantum information theory"
-    },
-    {
-        name: "Dr. Aruna",
-        role: "Post Doctoral Fellow",
-        description: "",
-        background: "",
-        expertise: "",
-        currentWork: "",
-        achievements: ""
-    },
-    {
-        name: "Suraj Singh",
-        role: "Undergraduate Researcher",
-        description: "",
-        background: "",
-        expertise: "",
-        currentWork: "",
-        achievements: ""
-    },
-    {
-        name: "Nishith Reen",
-        role: "Undergraduate Researcher",
-        description: "",
-        background: "",
-        expertise: "",
-        currentWork: "",
-        achievements: ""
-    },
-    {
-        name: "Abhinav Tomar",
-        role: "Undergraduate Researcher",
-        description: "",
-        background: "",
-        expertise: "",
-        currentWork: "",
-        achievements: ""
-    },
-
-];
+import { db } from '../lib/firebase';
+import { collection, onSnapshot, query } from 'firebase/firestore';
 
 const cardVariants = {
     hidden: { opacity: 0, y: 20 },
@@ -199,9 +107,14 @@ const TeamModal = ({ profile, onClose }) => {
                         color: '#000',
                         fontWeight: 'bold',
                         fontSize: '2.5rem',
-                        boxShadow: '0 0 20px rgba(137, 167, 131, 0.4)'
+                        boxShadow: '0 0 20px rgba(137, 167, 131, 0.4)',
+                        overflow: 'hidden'
                     }}>
-                        {profile.name.charAt(0)}
+                        {profile.photoURL ? (
+                            <img src={profile.photoURL} alt={profile.name} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                        ) : (
+                            profile.name ? profile.name.charAt(0) : '?'
+                        )}
                     </div>
 
                     <h2 style={{
@@ -338,9 +251,14 @@ const RotatingTeamCard = ({ profile, index, total, scrollYProgress, onClick }) =
                 color: '#000',
                 fontWeight: 'bold',
                 fontSize: '2.5rem',
-                boxShadow: '0 0 20px rgba(137, 167, 131, 0.2)'
+                boxShadow: '0 0 20px rgba(137, 167, 131, 0.2)',
+                overflow: 'hidden'
             }}>
-                {profile.name.charAt(0)}
+                {profile.photoURL ? (
+                    <img src={profile.photoURL} alt={profile.name} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                ) : (
+                    profile.name ? profile.name.charAt(0) : '?'
+                )}
             </div>
 
             <h2 style={{ fontSize: '1.5rem', margin: '0 0 0.5rem', color: '#89a783' }}>{profile.name}</h2>
@@ -379,17 +297,48 @@ const Team = () => {
         target: targetRef,
     });
 
+    const [profiles, setProfiles] = useState([]);
     const [activeProfile, setActiveProfile] = useState(null);
+    const [loading, setLoading] = useState(true);
+    const [error, setError] = useState(null);
     const isMobile = useIsMobile();
+
+    useEffect(() => {
+        // Fetch users from Firestore
+        const q = query(collection(db, 'users'));
+
+        const unsubscribe = onSnapshot(q, (snapshot) => {
+            const fetchedProfiles = snapshot.docs.map(doc => ({
+                id: doc.id,
+                ...doc.data()
+            })).filter(person => person.name && person.role); // Filter out incomplete profiles if needed
+
+            setProfiles(fetchedProfiles);
+            setLoading(false);
+        }, (err) => {
+            console.error("Error fetching team profiles:", err);
+            setError(err.message);
+            setLoading(false);
+        });
+
+        return () => unsubscribe();
+    }, []);
 
     // Mobile View: Stacked List
     if (isMobile) {
         return (
             <div style={{ padding: '120px 20px 50px' }}>
-                <h1 style={{ fontSize: '2.5rem', marginBottom: '2rem', fontWeight: 'bold' }}>Meet the Team</h1>
+                <h1 style={{ fontSize: '2.5rem', marginBottom: '2rem', fontWeight: 'bold', color: '#fff' }}>Meet the Team</h1>
+
+                {profiles.length === 0 && (
+                    <div style={{ color: '#666', textAlign: 'center', fontSize: '1rem', marginTop: '2rem' }}>
+                        No team members found. Update your profile in Dashboard to appear here.
+                    </div>
+                )}
+
                 {profiles.map((profile, i) => (
                     <div
-                        key={i}
+                        key={profile.id || i}
                         style={{ marginBottom: '1.5rem', background: 'rgba(255,255,255,0.03)', padding: '1.5rem', borderRadius: '20px', border: '1px solid rgba(255,255,255,0.1)' }}
                         onClick={() => setActiveProfile(profile)}
                     >
@@ -405,9 +354,14 @@ const Team = () => {
                                 color: '#000',
                                 fontWeight: 'bold',
                                 fontSize: '1.2rem',
-                                marginRight: '1rem'
+                                marginRight: '1rem',
+                                overflow: 'hidden'
                             }}>
-                                {profile.name.charAt(0)}
+                                {profile.photoURL ? (
+                                    <img src={profile.photoURL} alt={profile.name} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                                ) : (
+                                    profile.name ? profile.name.charAt(0) : '?'
+                                )}
                             </div>
                             <div>
                                 <h2 style={{ fontSize: '1.2rem', color: '#fff' }}>{profile.name}</h2>
@@ -439,7 +393,7 @@ const Team = () => {
                 alignItems: 'center'
             }}>
                 {/* Fixed Title Background */}
-                <div style={{ position: 'absolute', top: '12vh', left: '5vw', zIndex: 10, pointerEvents: 'none' }}>
+                <div style={{ position: 'absolute', top: '15vh', left: '5vw', zIndex: 10, pointerEvents: 'none' }}>
                     <h4 style={{
                         fontSize: '2rem',
                         fontWeight: 'bold',
@@ -454,9 +408,29 @@ const Team = () => {
                     </h4>
                 </div>
 
+                {loading && (
+                    <div style={{ color: '#666', fontSize: '1.5rem', position: 'absolute' }}>
+                        Loading researchers...
+                    </div>
+                )}
+
+                {error && (
+                    <div style={{ color: '#ef4444', fontSize: '1.2rem', position: 'absolute', textAlign: 'center', background: 'rgba(0,0,0,0.8)', padding: '20px', borderRadius: '10px', zIndex: 100 }}>
+                        <p>Error loading profiles: {error}</p>
+                        <span style={{ fontSize: '0.8rem', opacity: 0.8 }}>Check Firestore Security Rules.</span>
+                    </div>
+                )}
+
+                {!loading && !error && profiles.length === 0 && (
+                    <div style={{ color: '#666', fontSize: '1.2rem', position: 'absolute', textAlign: 'center' }}>
+                        No researchers found.<br />
+                        <span style={{ fontSize: '0.9rem', opacity: 0.7 }}>Go to Dashboard &gt; Settings to add your profile.</span>
+                    </div>
+                )}
+
                 {profiles.map((profile, i) => (
                     <RotatingTeamCard
-                        key={i}
+                        key={profile.id || i}
                         profile={profile}
                         index={i}
                         total={profiles.length}

@@ -4,8 +4,16 @@ export default {
         "./index.html",
         "./src/**/*.{js,ts,jsx,tsx}",
     ],
+
     theme: {
-        extend: {},
+        extend: {
+            fontFamily: {
+                sans: ['Outfit', 'sans-serif'],
+                main: ['Outfit', 'sans-serif'],
+                space: ['Space Grotesk', 'sans-serif'],
+                outfit: ['Outfit', 'sans-serif'],
+            },
+        },
     },
     plugins: [],
 }

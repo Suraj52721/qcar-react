@@ -1,0 +1,114 @@
+:root {
+    --bg-dark: #0a192f;
+    --bg-card: rgba(17, 34, 64, 0.7);
+    --primary: #64ffda;
+    --text-primary: #ccd6f6;
+    --text-secondary: #8892b0;
+    --font-heading: 'Space Grotesk', sans-serif;
+    --font-body: 'Outfit', sans-serif;
+}
+
+/* Global styles removed to prevent conflicts */
+
+/* Dashboard Wrapper */
+.dashboard-container {
+    min-height: 100vh;
+    width: 100vw;
+    background: radial-gradient(circle at 50% 10%, rgba(20, 30, 60, 1) 0%, var(--bg-dark) 60%);
+    padding: 2rem;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    overflow-x: hidden;
+}
+
+.dashboard-header {
+    display: flex;
+    justify-content: space-between;
+    width: 100%;
+    max-width: 1600px;
+    margin-bottom: 2rem;
+    align-items: center;
+    padding: 0 1rem;
+}
+
+.dashboard-title {
+    font-size: 2.2rem;
+    margin: 0;
+    font-weight: 700;
+    background: linear-gradient(90deg, #e6f1ff, #64ffda);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    letter-spacing: -1px;
+}
+
+.dashboard-btn-logout {
+    padding: 10px 24px;
+    background: rgba(239, 68, 68, 0.1);
+    border: 1px solid rgba(239, 68, 68, 0.3);
+    border-radius: 8px;
+    color: #ff6b6b;
+    cursor: pointer;
+    font-size: 0.95rem;
+    font-family: var(--font-body);
+    font-weight: 600;
+    transition: all 0.2s;
+}
+
+.dashboard-btn-logout:hover {
+    background: rgba(239, 68, 68, 0.2);
+    transform: translateY(-2px);
+    box-shadow: 0 5px 15px rgba(239, 68, 68, 0.1);
+}
+
+.dashboard-grid {
+    display: grid;
+    grid-template-columns: 350px 1fr 350px;
+    gap: 2rem;
+    width: 100%;
+    max-width: 1600px;
+    align-items: start;
+}
+
+/* Panel Containers */
+.dashboard-panel-side {
+    display: flex;
+    flex-direction: column;
+    gap: 2rem;
+}
+
+.dashboard-panel-main {
+    display: flex;
+    flex-direction: column;
+    gap: 2rem;
+    min-width: 0;
+}
+
+/* Responsive Breakpoints */
+@media (max-width: 1400px) {
+    .dashboard-grid {
+        grid-template-columns: 300px 1fr 300px;
+    }
+}
+
+@media (max-width: 1200px) {
+    .dashboard-grid {
+        grid-template-columns: 1fr;
+        max-width: 800px;
+    }
+
+    .dashboard-panel-side,
+    .dashboard-panel-main {
+        width: 100%;
+    }
+}
+
+@media (max-width: 768px) {
+    .dashboard-container {
+        padding: 1rem;
+    }
+
+    .dashboard-title {
+        font-size: 1.8rem;
+    }
+}

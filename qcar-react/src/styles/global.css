@@ -12,14 +12,20 @@
 
 html,
 body {
-    background: var(--color-bg);
-    color: var(--color-text);
+    background-color: #fafafa;
+    color: #18181b;
     margin: 0;
     padding: 0;
     font-family: var(--font-main);
     display: block;
     width: 100%;
     min-height: 100vh;
+    transition: background-color 0.3s ease, color 0.3s ease;
+}
+
+html.dark body {
+    background-color: #000000;
+    color: #f4f4f5;
 }
 
 /* Animations */

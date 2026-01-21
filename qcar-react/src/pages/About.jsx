@@ -2,12 +2,12 @@ import { motion } from 'framer-motion';
 
 const About = () => {
     return (
-        <div style={{ padding: '150px 10vw 50px' }}>
+        <div style={{ padding: '150px 10vw 50px', position: 'relative', zIndex: 10 }}>
             <motion.h1
                 initial={{ opacity: 0 }}
                 animate={{ opacity: 1 }}
                 transition={{ duration: 1 }}
-                style={{ fontSize: '3rem', marginBottom: '2rem', fontWeight: 'bold' }}
+                style={{ fontSize: '3rem', marginBottom: '2rem', fontWeight: 'bold', color: '#fff' }}
             >
                 About QCAR
             </motion.h1>
@@ -16,7 +16,7 @@ const About = () => {
                 initial={{ opacity: 0 }}
                 animate={{ opacity: 1 }}
                 transition={{ delay: 0.3 }}
-                style={{ maxWidth: '800px', lineHeight: 1.8, fontSize: '1.1rem', opacity: 0.8 }}
+                style={{ maxWidth: '800px', lineHeight: 1.8, fontSize: '1.1rem', color: '#fff' }}
             >
                 <p style={{ marginBottom: '1.5rem' }}>
                     The Quantum Computing Algorithms Research (QCAR) group was founded with the mission to bridge the gap between theoretical quantum physics and practical computational advantages.
