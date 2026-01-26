@@ -1,9 +1,9 @@
 import React, { useState, useEffect } from 'react';
 import { createPortal } from 'react-dom';
 import { db } from '../../lib/firebase';
-import { collection, addDoc, query, orderBy, onSnapshot, serverTimestamp } from 'firebase/firestore';
+import { collection, addDoc, query, orderBy, onSnapshot, serverTimestamp, deleteDoc, doc } from 'firebase/firestore';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Plus } from 'lucide-react';
+import { Plus, Trash2 } from 'lucide-react';
 import './DashboardWidgets.css';
 
 const ResearchTimeline = () => {
@@ -62,6 +62,18 @@ const ResearchTimeline = () => {
         }
     };
 
+    const handleDelete = async (id, e) => {
+        e.stopPropagation(); // Prevent potentially triggering other click handlers
+        if (!window.confirm("Are you sure you want to delete this milestone?")) return;
+
+        try {
+            await deleteDoc(doc(db, 'project_timeline', id));
+        } catch (error) {
+            console.error("Error deleting timeline item:", error);
+            alert("Failed to delete milestone: " + error.message);
+        }
+    };
+
 
     return (
         <div className="dashboard-widget-card timeline-widget" style={{ minHeight: '400px', overflow: 'hidden', position: 'relative' }}>
@@ -80,11 +92,19 @@ const ResearchTimeline = () => {
                                 key={event.id}
                                 initial={{ opacity: 0, scale: 0.8, y: 20 }}
                                 animate={{ opacity: 1, scale: 1, y: 0 }}
+                                exit={{ opacity: 0, scale: 0.8, y: 20 }}
                                 transition={{ delay: index * 0.1 }}
                                 className={`timeline-item ${index % 2 === 0 ? 'top' : 'bottom'} ${event.status}`}
                             >
                                 <div className="timeline-node"></div>
-                                <div className={`timeline-content ${event.status}`}>
+                                <div className={`timeline-content ${event.status} group relative`}>
+                                    <button
+                                        onClick={(e) => handleDelete(event.id, e)}
+                                        className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity text-zinc-500 hover:text-red-500"
+                                        title="Delete Milestone"
+                                    >
+                                        <Trash2 size={14} />
+                                    </button>
                                     <div className="timeline-date">{event.dateDisplay}</div>
                                     <h4 className="timeline-title">{event.title}</h4>
                                     <div className="timeline-tags">
