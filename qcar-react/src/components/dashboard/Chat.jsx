@@ -126,7 +126,15 @@ const Chat = () => {
                                 </div>
 
                                 <div className="message-bubble relative group">
-                                    {msg.text}
+                                    {msg.text.split(/(https?:\/\/[^\s]+)/g).map((part, i) => (
+                                        part.match(/^https?:\/\//) ? (
+                                            <a key={i} href={part} target="_blank" rel="noopener noreferrer" className="text-emerald-400 hover:underline break-all">
+                                                {part}
+                                            </a>
+                                        ) : (
+                                            <span key={i}>{part}</span>
+                                        )
+                                    ))}
 
                                     {/* Reaction Button triggers on hover */}
                                     <button

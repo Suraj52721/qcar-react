@@ -1,9 +1,9 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { createPortal } from 'react-dom';
 import { db, auth } from '../../lib/firebase';
-import { collection, addDoc, onSnapshot, query, orderBy, deleteDoc, doc, updateDoc, serverTimestamp } from 'firebase/firestore';
+import { collection, addDoc, onSnapshot, query, orderBy, deleteDoc, doc, updateDoc, serverTimestamp, where, getDocs } from 'firebase/firestore';
 import { onAuthStateChanged } from 'firebase/auth';
-import { CheckSquare, Plus, Trash2, Maximize2, X, MoreHorizontal } from 'lucide-react';
+import { CheckSquare, Plus, Trash2, Maximize2, X, MoreHorizontal, User, UserPlus } from 'lucide-react';
 import './DashboardWidgets.css';
 
 const COLUMNS = {
@@ -13,12 +13,14 @@ const COLUMNS = {
     done: { title: 'Done', color: '#a8b2d1' }
 };
 
-const KanbanBoard = () => {
+const KanbanBoard = ({ projectId }) => {
     const [tasks, setTasks] = useState([]);
+    const [users, setUsers] = useState([]); // All users for lookup
     const [currentUser, setCurrentUser] = useState(null);
     const [isExpanded, setIsExpanded] = useState(false);
     const [draggedItem, setDraggedItem] = useState(null);
     const [newTask, setNewTask] = useState('');
+    const [mentionQuery, setMentionQuery] = useState(null); // Query string after '@'
 
     useEffect(() => {
         const unsubscribe = onAuthStateChanged(auth, (user) => {
@@ -27,51 +29,106 @@ const KanbanBoard = () => {
         return () => unsubscribe();
     }, []);
 
+    // Fetch All Users for mentions
     useEffect(() => {
-        if (!currentUser) return;
+        const fetchUsers = async () => {
+            try {
+                const q = query(collection(db, 'users'));
+                const snapshot = await getDocs(q);
+                // Map to simple objects: { name: '...', uid: '...' }
+                const userList = snapshot.docs.map(doc => {
+                    const d = doc.data();
+                    // Fallback name logic
+                    let name = d.name || d.displayName || d.email?.split('@')[0] || 'Unknown';
+                    return { uid: doc.id, name: name, photoURL: d.photoURL };
+                });
+                setUsers(userList);
+            } catch (err) {
+                console.error("Error fetching users for mentions:", err);
+            }
+        };
+        fetchUsers();
+    }, []);
 
-        // Migrating old todos to 'pending' status if missing
-        const q = query(collection(db, 'users', currentUser.uid, 'todos'), orderBy('createdAt', 'desc'));
+    // Fetch Project Tasks
+    useEffect(() => {
+        if (!projectId) return;
+
+        // Query SHARED project_tasks instead of personal
+        const q = query(
+            collection(db, 'project_tasks'),
+            where('projectId', '==', projectId)
+        );
+
         const unsubscribe = onSnapshot(q, (snapshot) => {
-            setTasks(snapshot.docs.map(doc => {
-                const data = doc.data();
-                return {
-                    id: doc.id,
-                    ...data,
-                    // Default to pending if no status, or done if completed was true
-                    status: data.status || (data.completed ? 'done' : 'pending')
-                };
+            console.log(`KanbanBoard: Listen for projectId=${projectId}, docs found=${snapshot.docs.length}`);
+            const fetchedTasks = snapshot.docs.map(doc => ({
+                id: doc.id,
+                ...doc.data()
             }));
+
+            // Client-side Sort
+            fetchedTasks.sort((a, b) => (b.createdAt?.seconds || 0) - (a.createdAt?.seconds || 0));
+            setTasks(fetchedTasks);
         });
 
         return () => unsubscribe();
-    }, [currentUser]);
+    }, [projectId]);
+
 
     const handleAddTask = async (e) => {
         e.preventDefault();
-        if (!newTask.trim() || !currentUser) return;
+        if (!newTask.trim() || !currentUser || !projectId) return;
+
+        // Parse mentions Logic
+        // Simple parser: check if text ends with " @username" or contains it.
+        // For robustness, we'll assume the USER selected from the dropdown which inserted the name, 
+        // OR we parse the whole string to find known usernames.
+        // Logic: Find the LAST mentioned user in the string to assign to, or default to unassigned.
+
+        let assignedTo = null;
+        let assignedToName = null;
+        let taskText = newTask;
+
+        // Find mentioned user
+        // We look for patterns like "@Some Name"
+        // Iterate users and see if their name is in the string.
+        // This is naive but works for simple cases.
+        for (const user of users) {
+            if (taskText.includes(`@${user.name}`)) {
+                assignedTo = user.uid;
+                assignedToName = user.name;
+                // cleaner text? Optional.
+                break;
+            }
+        }
 
         try {
-            await addDoc(collection(db, 'users', currentUser.uid, 'todos'), {
-                text: newTask,
+            await addDoc(collection(db, 'project_tasks'), {
+                text: taskText,
                 status: 'pending',
+                projectId: projectId,
+                createdBy: currentUser.uid,
+                createdByName: currentUser.displayName || currentUser.email?.split('@')[0],
+                assignedTo: assignedTo,
+                assignedToName: assignedToName,
                 createdAt: serverTimestamp()
             });
             setNewTask('');
+            setMentionQuery(null);
         } catch (error) {
             console.error("Error adding task:", error);
+            alert("Error adding task: " + error.message);
         }
     };
 
     const handleDelete = async (id) => {
-        if (!currentUser) return;
-        await deleteDoc(doc(db, 'users', currentUser.uid, 'todos', id));
+        await deleteDoc(doc(db, 'project_tasks', id));
     };
 
     const handleDragStart = (e, task) => {
         setDraggedItem(task);
         e.dataTransfer.effectAllowed = 'move';
-        // Make element transparent but keep ghost
         e.target.style.opacity = '0.5';
     };
 
@@ -81,22 +138,47 @@ const KanbanBoard = () => {
     };
 
     const handleDragOver = (e) => {
-        e.preventDefault(); // Necessary to allow dropping
+        e.preventDefault();
     };
 
     const handleDrop = async (e, targetStatus) => {
         e.preventDefault();
         if (!draggedItem || draggedItem.status === targetStatus) return;
 
-        // Optimistic update locally could be done here, but Firestore is fast enough usually
-        if (!currentUser) return;
-
         try {
-            const taskRef = doc(db, 'users', currentUser.uid, 'todos', draggedItem.id);
+            const taskRef = doc(db, 'project_tasks', draggedItem.id);
             await updateDoc(taskRef, { status: targetStatus });
         } catch (error) {
             console.error("Error moving task:", error);
         }
+    };
+
+    // Text Input Handler for Mentions
+    const handleInputChange = (e) => {
+        const val = e.target.value;
+        setNewTask(val);
+
+        // Check for '@' trigger
+        const lastAt = val.lastIndexOf('@');
+        if (lastAt !== -1) {
+            const queryRaw = val.slice(lastAt + 1);
+            // Only show menu if no space after @ yet
+            if (!queryRaw.includes(' ')) {
+                setMentionQuery(queryRaw.toLowerCase());
+            } else {
+                setMentionQuery(null);
+            }
+        } else {
+            setMentionQuery(null);
+        }
+    };
+
+    const insertMention = (user) => {
+        const lastAt = newTask.lastIndexOf('@');
+        const prefix = newTask.slice(0, lastAt);
+        setNewTask(`${prefix}@${user.name} `);
+        setMentionQuery(null);
+        // keep focus? simplify for now
     };
 
     // Group tasks by status
@@ -114,9 +196,16 @@ const KanbanBoard = () => {
                 <div className="h-full flex flex-col">
                     <div className="flex-1 overflow-y-auto space-y-2 pr-1">
                         {tasks.slice(0, 4).map(task => (
-                            <div key={task.id} className="flex items-center gap-2 p-2 bg-white/5 rounded-lg border border-white/5 text-[10px] text-zinc-300">
-                                <div className={`w-1.5 h-1.5 rounded-full shrink-0`} style={{ background: COLUMNS[task.status]?.color || '#fff' }}></div>
-                                <span className={`truncate flex-1 ${task.status === 'done' ? 'line-through opacity-50' : ''}`}>{task.text}</span>
+                            <div key={task.id} className="flex flex-col gap-1 p-2 bg-white/5 rounded-lg border border-white/5 text-[10px] text-zinc-300">
+                                <div className="flex items-center gap-2">
+                                    <div className={`w-1.5 h-1.5 rounded-full shrink-0`} style={{ background: COLUMNS[task.status]?.color || '#fff' }}></div>
+                                    <span className={`truncate flex-1 font-semibold ${task.status === 'done' ? 'line-through opacity-50' : ''}`}>{task.text}</span>
+                                </div>
+                                {task.assignedToName && (
+                                    <div className="text-[9px] text-emerald-400 flex items-center gap-1 pl-3.5">
+                                        <User size={8} /> {task.assignedToName}
+                                    </div>
+                                )}
                             </div>
                         ))}
                         {tasks.length === 0 && <p className="text-zinc-600 text-xs text-center mt-4">No active tasks.</p>}
@@ -136,6 +225,10 @@ const KanbanBoard = () => {
     }
 
     // Modal Full View
+    const filteredUsers = mentionQuery
+        ? users.filter(u => u.name.toLowerCase().includes(mentionQuery))
+        : [];
+
     return createPortal(
         <div className="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 flex items-center justify-center p-4">
             <div className="bg-[#0b0b0b] border border-zinc-800 w-full max-w-7xl h-[85vh] rounded-3xl flex flex-col overflow-hidden shadow-2xl animate-in fade-in zoom-in duration-200">
@@ -144,7 +237,7 @@ const KanbanBoard = () => {
                 <div className="h-16 border-b border-zinc-800 flex items-center justify-between px-6 bg-zinc-900/50">
                     <div className="flex items-center gap-3">
                         <CheckSquare className="text-emerald-500" />
-                        <h2 className="text-xl font-bold tracking-tight text-white">Task Force // Kanban</h2>
+                        <h2 className="text-xl font-bold tracking-tight text-white">Task Force // Shared</h2>
                     </div>
                     <button onClick={() => setIsExpanded(false)} className="p-2 hover:bg-red-500/10 hover:text-red-400 rounded-lg text-zinc-500 transition-colors">
                         <X size={20} />
@@ -152,19 +245,36 @@ const KanbanBoard = () => {
                 </div>
 
                 {/* Toolbar */}
-                <div className="p-4 border-b border-zinc-800 flex items-center gap-4 bg-[#0b0b0b]">
+                <div className="p-4 border-b border-zinc-800 flex items-center gap-4 bg-[#0b0b0b] relative">
                     <form onSubmit={handleAddTask} className="flex-1 max-w-lg relative flex items-center">
                         <input
                             type="text"
                             value={newTask}
-                            onChange={(e) => setNewTask(e.target.value)}
-                            placeholder="Add a new task..."
+                            onChange={handleInputChange}
+                            placeholder="Add a task (type @name to assign)..."
                             className="w-full bg-zinc-900/50 border border-zinc-800 rounded-xl py-2.5 pl-4 pr-12 text-sm text-zinc-200 focus:border-emerald-500/50 focus:bg-zinc-900 outline-none transition-all"
                         />
                         <button type="submit" className="absolute right-2 p-1.5 bg-emerald-500/10 text-emerald-500 rounded-lg hover:bg-emerald-500 hover:text-black transition-colors">
                             <Plus size={16} />
                         </button>
+
+                        {/* Mention Dropdown */}
+                        {mentionQuery !== null && filteredUsers.length > 0 && (
+                            <div className="absolute top-full left-0 mt-2 w-64 bg-zinc-900 border border-zinc-800 rounded-xl shadow-xl overflow-hidden z-[60]">
+                                {filteredUsers.map(u => (
+                                    <div
+                                        key={u.uid}
+                                        onClick={() => insertMention(u)}
+                                        className="p-2 hover:bg-emerald-500/20 hover:text-emerald-400 cursor-pointer flex items-center gap-2 text-sm text-zinc-300"
+                                    >
+                                        <User size={14} />
+                                        {u.name}
+                                    </div>
+                                ))}
+                            </div>
+                        )}
                     </form>
+
                     <div className="flex gap-4 text-xs text-zinc-500 font-mono">
                         <span>Pending: {tasksByStatus.pending.length}</span>
                         <span>In Progress: {tasksByStatus.in_progress.length}</span>
@@ -205,16 +315,35 @@ const KanbanBoard = () => {
                                             className="bg-[#111] p-4 rounded-xl border border-zinc-800 hover:border-zinc-700 cursor-grab active:cursor-grabbing shadow-sm group relative"
                                         >
                                             <p className="text-sm text-zinc-300 mb-2 leading-relaxed">{task.text}</p>
-                                            <div className="flex items-center justify-between mt-2">
-                                                <span className="text-[10px] text-zinc-600 font-mono">
-                                                    {task.createdAt?.seconds ? new Date(task.createdAt.seconds * 1000).toLocaleDateString() : 'Just now'}
-                                                </span>
-                                                <button
-                                                    onClick={() => handleDelete(task.id)}
-                                                    className="opacity-0 group-hover:opacity-100 text-red-900 hover:text-red-500 transition-all p-1"
-                                                >
-                                                    <Trash2 size={12} />
-                                                </button>
+
+                                            {/* Metadata Row */}
+                                            <div className="flex flex-col gap-1.5 mt-2 border-t border-white/5 pt-2">
+                                                {/* Assigned To */}
+                                                {task.assignedToName && (
+                                                    <div className="flex items-center gap-1.5 text-emerald-400 text-xs font-medium">
+                                                        <User size={10} />
+                                                        <span>To: {task.assignedToName}</span>
+                                                    </div>
+                                                )}
+
+                                                {/* Assigned By (if not same as creator, or just creator) */}
+                                                {task.createdByName && task.createdBy !== currentUser?.uid && (
+                                                    <div className="text-[10px] text-zinc-600 flex items-center gap-1">
+                                                        <span>From: {task.createdByName}</span>
+                                                    </div>
+                                                )}
+
+                                                <div className="flex items-center justify-between mt-1">
+                                                    <span className="text-[10px] text-zinc-600 font-mono">
+                                                        {task.createdAt?.seconds ? new Date(task.createdAt.seconds * 1000).toLocaleDateString() : 'Just now'}
+                                                    </span>
+                                                    <button
+                                                        onClick={() => handleDelete(task.id)}
+                                                        className="opacity-0 group-hover:opacity-100 text-red-900 hover:text-red-500 transition-all p-1"
+                                                    >
+                                                        <Trash2 size={12} />
+                                                    </button>
+                                                </div>
                                             </div>
                                         </div>
                                     ))}

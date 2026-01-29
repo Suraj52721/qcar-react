@@ -1,12 +1,12 @@
 import React, { useState, useEffect } from 'react';
 import { createPortal } from 'react-dom';
 import { db } from '../../lib/firebase';
-import { collection, addDoc, query, orderBy, onSnapshot, serverTimestamp, deleteDoc, doc } from 'firebase/firestore';
+import { collection, addDoc, query, orderBy, onSnapshot, serverTimestamp, deleteDoc, doc, where } from 'firebase/firestore'; // Added where
 import { motion, AnimatePresence } from 'framer-motion';
 import { Plus, Trash2 } from 'lucide-react';
 import './DashboardWidgets.css';
 
-const ResearchTimeline = () => {
+const ResearchTimeline = ({ projectId }) => { // Accept projectId
     const [events, setEvents] = useState([]);
     const [isAdding, setIsAdding] = useState(false);
 
@@ -19,8 +19,13 @@ const ResearchTimeline = () => {
     });
 
     useEffect(() => {
-        // Fetch ALL items without filtering/sorting at DB level to ensure we see everything
-        const q = query(collection(db, 'project_timeline'));
+        if (!projectId) return; // Wait for project
+
+        // Filter by projectId
+        const q = query(
+            collection(db, 'project_timeline'),
+            where('projectId', '==', projectId)
+        );
 
         const unsubscribe = onSnapshot(q, (snapshot) => {
             const loadedEvents = snapshot.docs.map(doc => ({
@@ -38,11 +43,11 @@ const ResearchTimeline = () => {
             setEvents(loadedEvents);
         });
         return () => unsubscribe();
-    }, []);
+    }, [projectId]); // Re-run when project changes
 
     const handleAddItem = async (e) => {
         e.preventDefault();
-        if (!newItem.title) return;
+        if (!newItem.title || !projectId) return;
 
         try {
             await addDoc(collection(db, 'project_timeline'), {
@@ -51,6 +56,7 @@ const ResearchTimeline = () => {
                 dateOrder: newItem.date || new Date().toISOString().split('T')[0],
                 status: newItem.status,
                 tags: newItem.tags ? newItem.tags.split(',').map(t => t.trim()).filter(t => t) : [],
+                projectId: projectId, // Save with project ID
                 createdAt: serverTimestamp()
             });
             setIsAdding(false);

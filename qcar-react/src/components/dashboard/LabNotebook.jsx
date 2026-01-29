@@ -1,26 +1,33 @@
 import React, { useState, useEffect } from 'react';
 import { createPortal } from 'react-dom';
 import { db } from '../../lib/firebase';
-import { collection, addDoc, query, orderBy, onSnapshot, serverTimestamp, updateDoc, doc, deleteDoc } from 'firebase/firestore';
+import { collection, addDoc, query, orderBy, onSnapshot, serverTimestamp, updateDoc, doc, deleteDoc, where } from 'firebase/firestore'; // Added where
 import { Book, Maximize2, X, Plus, Save, FileText, Printer, Trash2 } from 'lucide-react';
 import './DashboardWidgets.css';
 
-const LabNotebook = () => {
+const LabNotebook = ({ projectId }) => { // Accept projectId
     const [notes, setNotes] = useState([]);
     const [currentNote, setCurrentNote] = useState({ title: '', content: '' });
     const [isExpanded, setIsExpanded] = useState(false);
     const [isSaving, setIsSaving] = useState(false);
 
     useEffect(() => {
-        const q = query(collection(db, 'research_notes'), orderBy('updatedAt', 'desc'));
+        if (!projectId) return;
+
+        const q = query(
+            collection(db, 'research_notes'),
+            where('projectId', '==', projectId)
+        );
         const unsubscribe = onSnapshot(q, (snapshot) => {
-            setNotes(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })));
+            const fetchedNotes = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+            fetchedNotes.sort((a, b) => (b.updatedAt?.seconds || 0) - (a.updatedAt?.seconds || 0));
+            setNotes(fetchedNotes);
         });
         return () => unsubscribe();
-    }, []);
+    }, [projectId]);
 
     const handleSave = async () => {
-        if (!currentNote.title && !currentNote.content) return;
+        if ((!currentNote.title && !currentNote.content) || !projectId) return;
         setIsSaving(true);
         try {
             const noteData = {
@@ -34,6 +41,7 @@ const LabNotebook = () => {
             } else {
                 const docRef = await addDoc(collection(db, 'research_notes'), {
                     ...noteData,
+                    projectId: projectId, // Save with project ID
                     createdAt: serverTimestamp()
                 });
                 setCurrentNote(prev => ({ ...prev, id: docRef.id }));

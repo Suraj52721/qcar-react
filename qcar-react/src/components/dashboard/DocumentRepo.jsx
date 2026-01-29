@@ -1,13 +1,13 @@
 import React, { useState, useEffect } from 'react';
 import { createPortal } from 'react-dom';
 import { db, auth } from '../../lib/firebase';
-import { collection, addDoc, onSnapshot, query, orderBy, deleteDoc, doc, serverTimestamp } from 'firebase/firestore';
+import { collection, addDoc, onSnapshot, query, orderBy, deleteDoc, doc, serverTimestamp, where } from 'firebase/firestore'; // Added where
 import { onAuthStateChanged } from 'firebase/auth';
 import { FileText, Upload, Trash2, FolderKanban, Download, ExternalLink, X, Plus } from 'lucide-react';
 import { supabase } from '../../lib/supabase';
 import './DashboardWidgets.css';
 
-const DocumentRepo = () => {
+const DocumentRepo = ({ projectId }) => { // Accept projectId
     const [docs, setDocs] = useState([]);
     const [currentUser, setCurrentUser] = useState(null);
     const [isExpanded, setIsExpanded] = useState(false);
@@ -21,23 +21,29 @@ const DocumentRepo = () => {
     }, []);
 
     useEffect(() => {
-        if (!currentUser) return;
-        const q = query(collection(db, 'documents'), orderBy('createdAt', 'desc'));
+        if (!currentUser || !projectId) return;
+
+        const q = query(
+            collection(db, 'documents'),
+            where('projectId', '==', projectId)
+        );
         const unsubscribe = onSnapshot(q, (snapshot) => {
-            setDocs(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })));
+            const fetchedDocs = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+            fetchedDocs.sort((a, b) => (b.createdAt?.seconds || 0) - (a.createdAt?.seconds || 0));
+            setDocs(fetchedDocs);
         });
         return () => unsubscribe();
-    }, [currentUser]);
+    }, [currentUser, projectId]);
 
     const handleUpload = async (e) => {
         const file = e.target.files[0];
-        if (!file || !currentUser) return;
+        if (!file || !currentUser || !projectId) return;
 
         setUploading(true);
         try {
             // Upload to Supabase Storage
-            // Using a unique path: papers/UID/timestamp_filename
-            const filePath = `papers/${currentUser.uid}/${Date.now()}_${file.name.replace(/[^a-zA-Z0-9.]/g, '_')}`;
+            // Using a unique path: papers/UID/projectId/timestamp_filename
+            const filePath = `papers/${currentUser.uid}/${projectId}/${Date.now()}_${file.name.replace(/[^a-zA-Z0-9.]/g, '_')}`;
 
             const { data, error: uploadError } = await supabase.storage
                 .from('documents')
@@ -58,6 +64,7 @@ const DocumentRepo = () => {
                 type: file.type,
                 size: file.size,
                 uploadedBy: currentUser.uid,
+                projectId: projectId, // Save with project ID
                 createdAt: serverTimestamp()
             });
 
