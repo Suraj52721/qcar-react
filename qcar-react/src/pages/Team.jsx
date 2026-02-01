@@ -283,7 +283,7 @@ const Team = () => {
             display: 'flex',
             flexDirection: 'column',
             justifyContent: 'center',
-            background: '#000'
+            background: 'transparent'
         }}>
 
             <div style={{ position: 'absolute', top: '14vh', left: '50%', transform: 'translateX(-50%)', zIndex: 10, textAlign: 'center' }}>
