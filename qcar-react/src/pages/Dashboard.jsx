@@ -2,11 +2,11 @@ import React, { useState, useEffect, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { onAuthStateChanged, signOut } from 'firebase/auth';
 import { auth, db } from '../lib/firebase'; // Added db import
-import { collection, query, where, onSnapshot, addDoc, deleteDoc, doc, serverTimestamp, orderBy } from 'firebase/firestore'; // Added Firestore imports
+import { collection, query, where, onSnapshot, addDoc, deleteDoc, doc, getDocs, updateDoc, serverTimestamp, orderBy } from 'firebase/firestore';
 import {
     MessageSquare, FolderKanban, Clock,
     Send, LogOut, Video, CheckSquare, Book, Atom, Settings,
-    Plus, ChevronDown, Folder
+    Plus, ChevronDown, Folder, Users, UserPlus, UserMinus, Check
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 
@@ -50,6 +50,13 @@ const Dashboard = () => {
     const [isNewProjectModalOpen, setIsNewProjectModalOpen] = useState(false);
     const [newProjectName, setNewProjectName] = useState('');
 
+    // Member management state
+    const [allUsers, setAllUsers] = useState([]);
+    const [selectedMembers, setSelectedMembers] = useState([]);
+    const [isMembersModalOpen, setIsMembersModalOpen] = useState(false);
+    const [managingProject, setManagingProject] = useState(null);
+    const [managingMembers, setManagingMembers] = useState([]);
+
     useEffect(() => {
         const unsubscribe = onAuthStateChanged(auth, (currentUser) => {
             if (!currentUser) {
@@ -66,11 +73,33 @@ const Dashboard = () => {
         return () => clearInterval(timer);
     }, []);
 
-    // Fetch Projects
+    // Fetch all users for the member picker
     useEffect(() => {
         if (!user) return;
 
-        const q = query(collection(db, 'projects'));
+        const fetchUsers = async () => {
+            try {
+                const usersSnap = await getDocs(collection(db, 'users'));
+                const usersList = usersSnap.docs.map(d => ({
+                    uid: d.id,
+                    name: d.data().name || d.data().email || d.id,
+                    role: d.data().role || '',
+                    photoURL: d.data().photoURL || ''
+                }));
+                setAllUsers(usersList);
+            } catch (err) {
+                console.error('Error fetching users:', err);
+            }
+        };
+
+        fetchUsers();
+    }, [user]);
+
+    // Fetch Projects (filtered to only show projects where user is a member)
+    useEffect(() => {
+        if (!user) return;
+
+        const q = query(collection(db, 'projects'), where('members', 'array-contains', user.uid));
 
         const unsubscribe = onSnapshot(q, (snapshot) => {
             const fetchedProjects = snapshot.docs.map(doc => ({
@@ -118,26 +147,68 @@ const Dashboard = () => {
         e.preventDefault();
         if (!newProjectName.trim() || !user) return;
 
+        // Always include creator in the members list
+        const members = [...new Set([user.uid, ...selectedMembers])];
+
         try {
             const docRef = await addDoc(collection(db, 'projects'), {
                 name: newProjectName,
                 createdBy: user.uid,
-                createdAt: serverTimestamp()
+                createdAt: serverTimestamp(),
+                members: members
             });
 
             // Auto-switch to new project
             setActiveProject({
                 id: docRef.id,
                 name: newProjectName,
-                createdBy: user.uid
+                createdBy: user.uid,
+                members: members
             });
 
             setNewProjectName('');
+            setSelectedMembers([]);
             setIsNewProjectModalOpen(false);
         } catch (error) {
             console.error("Error creating project:", error);
             alert("Failed to create project");
         }
+    };
+
+    const toggleMemberSelection = (uid) => {
+        setSelectedMembers(prev =>
+            prev.includes(uid) ? prev.filter(id => id !== uid) : [...prev, uid]
+        );
+    };
+
+    const openManageMembers = (project, e) => {
+        e.stopPropagation();
+        setManagingProject(project);
+        setManagingMembers(project.members || []);
+        setIsMembersModalOpen(true);
+        setIsProjectDropdownOpen(false);
+    };
+
+    const handleUpdateMembers = async () => {
+        if (!managingProject) return;
+        // Always keep the creator
+        const finalMembers = [...new Set([managingProject.createdBy, ...managingMembers])];
+        try {
+            await updateDoc(doc(db, 'projects', managingProject.id), {
+                members: finalMembers
+            });
+            setIsMembersModalOpen(false);
+            setManagingProject(null);
+        } catch (error) {
+            console.error('Error updating members:', error);
+            alert('Failed to update members');
+        }
+    };
+
+    const toggleManagingMember = (uid) => {
+        setManagingMembers(prev =>
+            prev.includes(uid) ? prev.filter(id => id !== uid) : [...prev, uid]
+        );
     };
 
     const handleDeleteProject = async (projectId, e) => {
@@ -214,14 +285,25 @@ const Dashboard = () => {
                                                 <Folder size={16} />
                                                 <span className="text-sm font-medium truncate">{project.name}</span>
                                             </div>
-                                            {project.createdBy === user.uid && activeProject?.id !== project.id && (
-                                                <button
-                                                    onClick={(e) => handleDeleteProject(project.id, e)}
-                                                    className="p-1 hover:bg-red-500/20 text-zinc-600 hover:text-red-500 rounded-lg transition-colors"
-                                                    title="Delete Project"
-                                                >
-                                                    <LogOut size={12} className="rotate-180" />
-                                                </button>
+                                            {project.createdBy === user.uid && (
+                                                <div className="flex items-center gap-1">
+                                                    <button
+                                                        onClick={(e) => openManageMembers(project, e)}
+                                                        className="p-1 hover:bg-emerald-500/20 text-zinc-600 hover:text-emerald-400 rounded-lg transition-colors"
+                                                        title="Manage Members"
+                                                    >
+                                                        <Users size={12} />
+                                                    </button>
+                                                    {activeProject?.id !== project.id && (
+                                                        <button
+                                                            onClick={(e) => handleDeleteProject(project.id, e)}
+                                                            className="p-1 hover:bg-red-500/20 text-zinc-600 hover:text-red-500 rounded-lg transition-colors"
+                                                            title="Delete Project"
+                                                        >
+                                                            <LogOut size={12} className="rotate-180" />
+                                                        </button>
+                                                    )}
+                                                </div>
                                             )}
                                         </div>
                                     ))}
@@ -280,10 +362,53 @@ const Dashboard = () => {
                                     className="w-full bg-zinc-900 border border-zinc-800 rounded-xl p-3 text-white mb-4 focus:ring-1 focus:ring-emerald-500 outline-none"
                                     autoFocus
                                 />
+
+                                {/* Member Picker */}
+                                <div className="mb-4">
+                                    <label className="text-xs font-bold text-zinc-500 uppercase tracking-widest mb-2 block">
+                                        <UserPlus size={14} className="inline mr-1" /> Add Members
+                                    </label>
+                                    <div className="max-h-48 overflow-y-auto space-y-1 bg-zinc-900/50 border border-zinc-800 rounded-xl p-2">
+                                        {allUsers.filter(u => u.uid !== user?.uid).length === 0 && (
+                                            <div className="text-xs text-zinc-600 text-center py-3">No other users found</div>
+                                        )}
+                                        {allUsers.filter(u => u.uid !== user?.uid).map(u => (
+                                            <div
+                                                key={u.uid}
+                                                onClick={() => toggleMemberSelection(u.uid)}
+                                                className={`flex items-center gap-3 p-2 rounded-lg cursor-pointer transition-colors ${selectedMembers.includes(u.uid)
+                                                        ? 'bg-emerald-500/15 border border-emerald-500/30'
+                                                        : 'hover:bg-white/5 border border-transparent'
+                                                    }`}
+                                            >
+                                                <div className="w-8 h-8 rounded-full bg-zinc-800 flex items-center justify-center overflow-hidden flex-shrink-0">
+                                                    {u.photoURL ? (
+                                                        <img src={u.photoURL} alt={u.name} className="w-full h-full object-cover" />
+                                                    ) : (
+                                                        <span className="text-xs font-bold text-zinc-500">{u.name?.charAt(0) || '?'}</span>
+                                                    )}
+                                                </div>
+                                                <div className="flex-1 min-w-0">
+                                                    <div className="text-sm text-white truncate">{u.name}</div>
+                                                    {u.role && <div className="text-[10px] text-zinc-500 truncate">{u.role}</div>}
+                                                </div>
+                                                {selectedMembers.includes(u.uid) && (
+                                                    <Check size={16} className="text-emerald-400 flex-shrink-0" />
+                                                )}
+                                            </div>
+                                        ))}
+                                    </div>
+                                    {selectedMembers.length > 0 && (
+                                        <div className="text-xs text-emerald-500 mt-2">
+                                            {selectedMembers.length} member{selectedMembers.length > 1 ? 's' : ''} selected + you
+                                        </div>
+                                    )}
+                                </div>
+
                                 <div className="flex justify-end gap-3">
                                     <button
                                         type="button"
-                                        onClick={() => setIsNewProjectModalOpen(false)}
+                                        onClick={() => { setIsNewProjectModalOpen(false); setSelectedMembers([]); }}
                                         className="px-4 py-2 text-zinc-500 hover:text-white transition-colors"
                                     >
                                         Cancel
@@ -296,6 +421,82 @@ const Dashboard = () => {
                                     </button>
                                 </div>
                             </form>
+                        </motion.div>
+                    </div>
+                )}
+            </AnimatePresence>
+
+            {/* Manage Members Modal */}
+            <AnimatePresence>
+                {isMembersModalOpen && managingProject && (
+                    <div className="fixed inset-0 bg-black/80 backdrop-blur-sm z-[100] flex items-center justify-center p-4"
+                        onClick={() => { setIsMembersModalOpen(false); setManagingProject(null); }}>
+                        <motion.div
+                            initial={{ scale: 0.9, opacity: 0 }}
+                            animate={{ scale: 1, opacity: 1 }}
+                            exit={{ scale: 0.9, opacity: 0 }}
+                            onClick={(e) => e.stopPropagation()}
+                            className="bg-[#0d0d0d] border border-zinc-800 w-full max-w-md p-6 rounded-3xl shadow-2xl"
+                        >
+                            <h2 className="text-xl font-bold text-white mb-1 flex items-center gap-2">
+                                <Users size={20} className="text-emerald-500" /> Manage Members
+                            </h2>
+                            <p className="text-xs text-zinc-500 mb-4">Project: {managingProject.name}</p>
+
+                            <div className="max-h-64 overflow-y-auto space-y-1 bg-zinc-900/50 border border-zinc-800 rounded-xl p-2 mb-4">
+                                {allUsers.map(u => {
+                                    const isCreator = u.uid === managingProject.createdBy;
+                                    const isMember = managingMembers.includes(u.uid);
+                                    return (
+                                        <div
+                                            key={u.uid}
+                                            onClick={() => !isCreator && toggleManagingMember(u.uid)}
+                                            className={`flex items-center gap-3 p-2 rounded-lg transition-colors ${isCreator
+                                                    ? 'bg-emerald-500/10 border border-emerald-500/20 cursor-default'
+                                                    : isMember
+                                                        ? 'bg-emerald-500/15 border border-emerald-500/30 cursor-pointer'
+                                                        : 'hover:bg-white/5 border border-transparent cursor-pointer'
+                                                }`}
+                                        >
+                                            <div className="w-8 h-8 rounded-full bg-zinc-800 flex items-center justify-center overflow-hidden flex-shrink-0">
+                                                {u.photoURL ? (
+                                                    <img src={u.photoURL} alt={u.name} className="w-full h-full object-cover" />
+                                                ) : (
+                                                    <span className="text-xs font-bold text-zinc-500">{u.name?.charAt(0) || '?'}</span>
+                                                )}
+                                            </div>
+                                            <div className="flex-1 min-w-0">
+                                                <div className="text-sm text-white truncate">
+                                                    {u.name} {isCreator && <span className="text-[10px] text-emerald-400 ml-1">(Owner)</span>}
+                                                </div>
+                                                {u.role && <div className="text-[10px] text-zinc-500 truncate">{u.role}</div>}
+                                            </div>
+                                            {(isMember || isCreator) && (
+                                                <Check size={16} className={`flex-shrink-0 ${isCreator ? 'text-emerald-500' : 'text-emerald-400'}`} />
+                                            )}
+                                        </div>
+                                    );
+                                })}
+                            </div>
+
+                            <div className="text-xs text-zinc-500 mb-4">
+                                {managingMembers.length} member{managingMembers.length !== 1 ? 's' : ''} in project
+                            </div>
+
+                            <div className="flex justify-end gap-3">
+                                <button
+                                    onClick={() => { setIsMembersModalOpen(false); setManagingProject(null); }}
+                                    className="px-4 py-2 text-zinc-500 hover:text-white transition-colors"
+                                >
+                                    Cancel
+                                </button>
+                                <button
+                                    onClick={handleUpdateMembers}
+                                    className="px-6 py-2 bg-emerald-600 hover:bg-emerald-500 text-black font-bold rounded-xl transition-colors flex items-center gap-2"
+                                >
+                                    <Check size={16} /> Save
+                                </button>
+                            </div>
                         </motion.div>
                     </div>
                 )}
