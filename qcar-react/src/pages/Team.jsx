@@ -172,14 +172,14 @@ const TeamCard = ({ profile, onClick }) => {
                 backdropFilter: 'blur(10px)',
                 borderRadius: '24px',
                 border: '1px solid rgba(255, 255, 255, 0.1)',
-                padding: '2rem',
+                padding: 0,
                 display: 'flex',
                 flexDirection: 'column',
                 alignItems: 'center',
                 textAlign: 'center',
                 position: 'relative',
                 cursor: 'pointer',
-                margin: '0 15px', // Horizontal spacing
+                margin: '0 15px',
                 overflow: 'hidden'
             }}
             whileHover={{
@@ -190,20 +190,19 @@ const TeamCard = ({ profile, onClick }) => {
             }}
             onClick={() => onClick(profile)}
         >
+            {/* Square photo covering top 40% of the card */}
             <div style={{
-                width: '100px',
-                height: '100px',
-                borderRadius: '50%',
+                width: '100%',
+                height: '50%',
                 background: 'linear-gradient(135deg, #89a783 0%, #1d4f40 100%)',
-                marginBottom: '1.5rem',
                 display: 'flex',
                 alignItems: 'center',
                 justifyContent: 'center',
                 color: '#000',
                 fontWeight: 'bold',
-                fontSize: '2rem',
-                boxShadow: '0 0 20px rgba(137, 167, 131, 0.2)',
-                overflow: 'hidden'
+                fontSize: '2.5rem',
+                overflow: 'hidden',
+                flexShrink: 0
             }}>
                 {profile.photoURL ? (
                     <img src={profile.photoURL} alt={profile.name} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
@@ -212,30 +211,40 @@ const TeamCard = ({ profile, onClick }) => {
                 )}
             </div>
 
-            <h2 style={{ fontSize: '1.4rem', margin: '0 0 0.5rem', color: '#89a783', fontFamily: 'var(--font-main)' }}>{profile.name}</h2>
-            <h3 style={{ fontSize: '0.8rem', opacity: 0.7, textTransform: 'uppercase', letterSpacing: '0.1em', marginBottom: '1rem', color: '#fff' }}>{profile.role}</h3>
-
-            <p style={{
-                fontSize: '0.9rem',
-                color: 'rgba(255,255,255,0.7)',
-                lineHeight: 1.5,
-                display: '-webkit-box',
-                WebkitLineClamp: 4,
-                WebkitBoxOrient: 'vertical',
-                overflow: 'hidden'
-            }}>
-                {profile.description}
-            </p>
-
+            {/* Text content below the photo */}
             <div style={{
-                marginTop: 'auto',
-                fontSize: '0.75rem',
-                opacity: 0.5,
-                borderBottom: '1px dotted #89a783',
-                paddingBottom: '2px',
-                color: '#fff'
+                padding: '1.2rem 1.5rem',
+                display: 'flex',
+                flexDirection: 'column',
+                alignItems: 'center',
+                flex: 1,
+                width: '100%'
             }}>
-                View Details
+                <h2 style={{ fontSize: '1.4rem', margin: '0 0 0.5rem', color: '#89a783', fontFamily: 'var(--font-main)' }}>{profile.name}</h2>
+                <h3 style={{ fontSize: '0.8rem', opacity: 0.7, textTransform: 'uppercase', letterSpacing: '0.1em', marginBottom: '1rem', color: '#fff' }}>{profile.role}</h3>
+
+                <p style={{
+                    fontSize: '0.9rem',
+                    color: 'rgba(255,255,255,0.7)',
+                    lineHeight: 1.5,
+                    display: '-webkit-box',
+                    WebkitLineClamp: 3,
+                    WebkitBoxOrient: 'vertical',
+                    overflow: 'hidden'
+                }}>
+                    {profile.description}
+                </p>
+
+                <div style={{
+                    marginTop: 'auto',
+                    fontSize: '0.75rem',
+                    opacity: 0.5,
+                    borderBottom: '1px dotted #89a783',
+                    paddingBottom: '2px',
+                    color: '#fff'
+                }}>
+                    View Details
+                </div>
             </div>
         </motion.div>
     );
@@ -246,7 +255,25 @@ const Team = () => {
     const [activeProfile, setActiveProfile] = useState(null);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState(null);
+    const [autoScroll, setAutoScroll] = useState(true);
     const isMobile = useIsMobile();
+    const scrollRef = useRef(null);
+
+    // Convert vertical wheel to horizontal scroll when in manual mode
+    useEffect(() => {
+        const el = scrollRef.current;
+        if (!el || autoScroll) return;
+
+        const handleWheel = (e) => {
+            if (Math.abs(e.deltaY) > 0) {
+                e.preventDefault();
+                el.scrollLeft += e.deltaY;
+            }
+        };
+
+        el.addEventListener('wheel', handleWheel, { passive: false });
+        return () => el.removeEventListener('wheel', handleWheel);
+    }, [autoScroll]);
 
     useEffect(() => {
         // Fetch users from Firestore
@@ -269,11 +296,11 @@ const Team = () => {
         return () => unsubscribe();
     }, []);
 
-    // Desktop: Horizontal Infinite Marquee
-    // Mobile: Same component, maybe just let it flow or same behavior
-
     // We duplicate the list to create the seamless loop
     const doubledProfiles = [...profiles, ...profiles, ...profiles, ...profiles]; // 4x to be safe for wide screens
+
+    // Calculate animation duration based on profile count
+    const animDuration = Math.max(20, profiles.length * 5);
 
     return (
         <section style={{
@@ -285,6 +312,23 @@ const Team = () => {
             justifyContent: 'center',
             background: 'transparent'
         }}>
+            {/* Inject keyframes for marquee */}
+            <style>{`
+                @keyframes team-marquee {
+                    0% { transform: translateX(0); }
+                    100% { transform: translateX(-50%); }
+                }
+                .team-scroll-container::-webkit-scrollbar {
+                    height: 4px;
+                }
+                .team-scroll-container::-webkit-scrollbar-track {
+                    background: transparent;
+                }
+                .team-scroll-container::-webkit-scrollbar-thumb {
+                    background: rgba(137, 167, 131, 0.3);
+                    border-radius: 4px;
+                }
+            `}</style>
 
             <div style={{ position: 'absolute', top: '14vh', left: '50%', transform: 'translateX(-50%)', zIndex: 10, textAlign: 'center' }}>
                 <h4 style={{
@@ -299,6 +343,45 @@ const Team = () => {
                     THE TEAM
                 </h4>
             </div>
+
+            {/* Play/Pause Toggle - positioned on the right side */}
+            {!loading && profiles.length > 0 && (
+                <button
+                    onClick={() => setAutoScroll(prev => !prev)}
+                    style={{
+                        position: 'absolute',
+                        right: '2rem',
+                        bottom: '2rem',
+                        zIndex: 20,
+                        background: autoScroll ? 'rgba(137, 167, 131, 0.15)' : 'rgba(255, 255, 255, 0.08)',
+                        border: `1px solid ${autoScroll ? 'rgba(137, 167, 131, 0.4)' : 'rgba(255,255,255,0.15)'}`,
+                        borderRadius: '50px',
+                        padding: '10px 22px',
+                        color: autoScroll ? '#89a783' : '#999',
+                        fontSize: '0.75rem',
+                        fontWeight: 'bold',
+                        letterSpacing: '0.1em',
+                        textTransform: 'uppercase',
+                        cursor: 'pointer',
+                        display: 'inline-flex',
+                        alignItems: 'center',
+                        gap: '8px',
+                        transition: 'all 0.3s ease',
+                        backdropFilter: 'blur(8px)',
+                        boxShadow: '0 4px 15px rgba(0,0,0,0.3)'
+                    }}
+                >
+                    {autoScroll ? (
+                        <>
+                            <span style={{ fontSize: '1rem' }}>⏸</span> Pause
+                        </>
+                    ) : (
+                        <>
+                            <span style={{ fontSize: '1rem' }}>▶</span> Play
+                        </>
+                    )}
+                </button>
+            )}
 
             {loading && (
                 <div style={{ color: '#666', fontSize: '1.5rem', textAlign: 'center' }}>
@@ -320,39 +403,37 @@ const Team = () => {
             )}
 
             {!loading && profiles.length > 0 && (
-                <div style={{
-                    position: 'relative',
-                    width: '100%',
-                    display: 'flex',
-                    alignItems: 'center',
-                    padding: '2rem 0',
-                    marginTop: '10vh',
-                    maskImage: 'linear-gradient(to right, transparent, black 10%, black 90%, transparent)'
-                }}>
-                    <motion.div
-                        initial={{ x: 0 }}
-                        animate={{ x: '-50%' }}
-                        transition={{
-                            duration: Math.max(20, profiles.length * 5), // Adjust speed based on count
-                            ease: "linear",
-                            repeat: Infinity
-                        }}
+                <div
+                    ref={scrollRef}
+                    className={autoScroll ? '' : 'team-scroll-container'}
+                    style={{
+                        position: 'relative',
+                        width: '100%',
+                        display: 'flex',
+                        alignItems: 'center',
+                        padding: '2rem 0',
+                        marginTop: '10vh',
+                        maskImage: 'linear-gradient(to right, transparent, black 10%, black 90%, transparent)',
+                        overflowX: autoScroll ? 'hidden' : 'auto',
+                        overflowY: 'hidden'
+                    }}
+                >
+                    <div
                         style={{
                             display: 'flex',
-                            width: 'max-content',
-                            paddingLeft: '50px' // Initial offset
+                            width: autoScroll ? 'max-content' : undefined,
+                            paddingLeft: '50px',
+                            animation: autoScroll ? `team-marquee ${animDuration}s linear infinite` : 'none',
                         }}
-                        // Pause on hover
-                        whileHover={{ animationPlayState: 'paused' }}
                     >
-                        {doubledProfiles.map((profile, index) => (
+                        {(autoScroll ? doubledProfiles : profiles).map((profile, index) => (
                             <TeamCard
                                 key={`${profile.id}-${index}`}
                                 profile={profile}
                                 onClick={setActiveProfile}
                             />
                         ))}
-                    </motion.div>
+                    </div>
                 </div>
             )}
 

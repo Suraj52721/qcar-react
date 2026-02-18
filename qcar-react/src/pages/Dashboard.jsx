@@ -336,7 +336,7 @@ const Dashboard = () => {
                         {/* 6. MEETING (Single Wide, Single Tall) */}
                         <AppBox title="Uplink" icon={Video}>
                             <button
-                                onClick={() => window.open('https://meet.new', '_blank')}
+                                onClick={() => window.open('https://meet.google.com/yqj-hjme-bau', '_blank')}
                                 className="w-full h-full bg-zinc-900/50 border border-white/5 rounded-2xl flex flex-col items-center justify-center gap-3 hover:bg-emerald-500/10 hover:border-emerald-500/50 hover:text-emerald-400 transition group/btn"
                             >
                                 <div className="p-3 bg-zinc-800 rounded-full group-hover/btn:bg-emerald-500 group-hover/btn:text-black transition-colors">

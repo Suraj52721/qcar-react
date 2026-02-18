@@ -1,8 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { createPortal } from 'react-dom';
-import { auth, db, storage } from '../../lib/firebase';
+import { auth, db } from '../../lib/firebase';
 import { doc, getDoc, setDoc, serverTimestamp } from 'firebase/firestore';
-import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
+import { supabase } from '../../lib/supabase';
 import { X, Upload, Save, User, Briefcase, FileText, Camera } from 'lucide-react';
 
 const ProfileSettings = ({ isOpen, onClose }) => {
@@ -57,14 +57,28 @@ const ProfileSettings = ({ isOpen, onClose }) => {
 
         setUploading(true);
         try {
-            const storageRef = ref(storage, `avatars/${currentUser.uid}/${file.name}`);
-            const snapshot = await uploadBytes(storageRef, file);
-            const downloadURL = await getDownloadURL(snapshot.ref);
+            // Create a unique file path in Supabase Storage
+            const fileExt = file.name.split('.').pop();
+            const filePath = `${currentUser.uid}/${Date.now()}.${fileExt}`;
 
-            setFormData(prev => ({ ...prev, photoURL: downloadURL }));
+            const { data, error } = await supabase.storage
+                .from('avatars')
+                .upload(filePath, file, {
+                    cacheControl: '3600',
+                    upsert: true
+                });
+
+            if (error) throw error;
+
+            // Get public URL
+            const { data: urlData } = supabase.storage
+                .from('avatars')
+                .getPublicUrl(filePath);
+
+            setFormData(prev => ({ ...prev, photoURL: urlData.publicUrl }));
         } catch (error) {
             console.error("Error uploading image:", error);
-            alert("Failed to upload image.");
+            alert("Failed to upload image: " + error.message);
         } finally {
             setUploading(false);
         }
