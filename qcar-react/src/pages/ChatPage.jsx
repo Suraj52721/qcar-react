@@ -93,7 +93,7 @@ const ChatPage = () => {
         });
 
         // Request Browser Notification Permission
-        if ('Notification' in window && Notification.permission !== 'granted' && Notification.permission !== 'denied') {
+        if ('Notification' in window && Notification.permission === 'default') {
             Notification.requestPermission();
         }
 
@@ -126,29 +126,12 @@ const ChatPage = () => {
             where('chatId', '==', chatId),
             orderBy('createdAt', 'asc')
         );
+        let isInitialLoad = true;
 
         const unsubscribe = onSnapshot(q, (snapshot) => {
             snapshot.docChanges().forEach((change) => {
                 if (change.type === 'added') {
-                    const data = change.doc.data();
-                    // Show notification if it's a new message not from us, and we are not on initial load
-                    if (data.senderId !== user.uid && data.createdAt && snapshot.metadata.hasPendingWrites === false) {
-                        const senderName = selectedUser.name || 'Operative';
-
-                        // Internal App Toast
-                        toast(`New message from ${senderName}`, {
-                            icon: '💬',
-                            style: { borderRadius: '10px', background: '#333', color: '#fff' }
-                        });
-
-                        // OS Browser Notification
-                        if ('Notification' in window && Notification.permission === 'granted' && document.hidden) {
-                            new Notification(`New Message from ${senderName}`, {
-                                body: data.text || 'Sent an attachment',
-                                icon: selectedUser.photoURL || '/favicon.ico'
-                            });
-                        }
-                    }
+                    // Notifications are now handled globally by GlobalNotificationProvider
                 }
             });
 
@@ -165,8 +148,9 @@ const ChatPage = () => {
                     }
                 });
             }
+            isInitialLoad = false;
         }, (err) => {
-            console.error("Firestore Error. If index missing, check console link:", err);
+            console.error("ChatPage direct_messages Listener Error:", err);
         });
         return () => unsubscribe();
     }, [user, selectedUser]);
@@ -179,6 +163,10 @@ const ChatPage = () => {
             if (docSnap.exists()) {
                 const data = docSnap.data();
                 setOtherUserTyping(data[`typing_${selectedUser.uid}`] || false);
+            }
+        }, (err) => {
+            if (err.code !== 'permission-denied') {
+                console.warn("Typing indicator error:", err);
             }
         });
         return () => unsubscribe();
@@ -212,7 +200,7 @@ const ChatPage = () => {
             isCurrentlyTypingRef.current = true;
             setDoc(doc(db, 'chat_status', chatId), {
                 [`typing_${user.uid}`]: true
-            }, { merge: true }).catch(console.error);
+            }, { merge: true }).catch(err => { if (err.code !== 'permission-denied') console.warn(err); });
         }
 
         if (typingTimeoutRef.current) clearTimeout(typingTimeoutRef.current);
@@ -221,7 +209,7 @@ const ChatPage = () => {
             isCurrentlyTypingRef.current = false;
             setDoc(doc(db, 'chat_status', chatId), {
                 [`typing_${user.uid}`]: false
-            }, { merge: true }).catch(console.error);
+            }, { merge: true }).catch(err => { if (err.code !== 'permission-denied') console.warn(err); });
         }, 2000);
     };
 
@@ -256,7 +244,7 @@ const ChatPage = () => {
             await addDoc(collection(db, 'direct_messages'), messageData);
             setDoc(doc(db, 'chat_status', chatId), {
                 [`typing_${user.uid}`]: false
-            }, { merge: true }).catch(console.error);
+            }, { merge: true }).catch(err => { if (err.code !== 'permission-denied') console.warn(err); });
         } catch (error) {
             console.error('Error sending message:', error);
             toast.error('Failed to send message');
