@@ -9,6 +9,7 @@ import Research from './pages/Research';
 import Contact from './pages/Contact';
 import Login from './pages/Auth/Login';
 import Dashboard from './pages/Dashboard';
+import ChatPage from './pages/ChatPage';
 import './styles/global.css';
 
 function App() {
@@ -27,6 +28,11 @@ function App() {
           <Route path="/dashboard" element={
             <ProtectedRoute>
               <Dashboard />
+            </ProtectedRoute>
+          } />
+          <Route path="/chat" element={
+            <ProtectedRoute>
+              <ChatPage />
             </ProtectedRoute>
           } />
         </Routes>

@@ -111,6 +111,85 @@ body {
     z-index: 1;
 }
 
+/* LIGHT THEME GLOBALS - COLORFUL & GLASSMORPHIC */
+body.light-theme {
+    background: linear-gradient(135deg, #e0f2fe 0%, #d1fae5 50%, #fef3c7 100%) !important;
+    background-attachment: fixed !important;
+    color: #0f172a !important;
+}
+
+/* Glassmorphism Backgrounds for AppBoxes & Containers */
+body.light-theme .bg-black,
+body.light-theme .bg-\[\#0d0d0d\],
+body.light-theme .bg-\[\#0b0b0b\] {
+    background-color: rgba(255, 255, 255, 0.45) !important;
+    backdrop-filter: blur(24px) !important;
+    -webkit-backdrop-filter: blur(24px) !important;
+    box-shadow: 0 8px 32px rgba(16, 185, 129, 0.08) !important;
+}
+
+body.light-theme .bg-black\/20,
+body.light-theme .bg-black\/30,
+body.light-theme .bg-black\/40,
+body.light-theme .bg-black\/50,
+body.light-theme .bg-black\/60 {
+    background-color: rgba(255, 255, 255, 0.5) !important;
+    backdrop-filter: blur(12px) !important;
+}
+
+body.light-theme .bg-zinc-900,
+body.light-theme .bg-zinc-900\/50,
+body.light-theme .bg-zinc-900\/80,
+body.light-theme .bg-zinc-900\/40,
+body.light-theme .bg-zinc-800,
+body.light-theme .bg-zinc-800\/80 {
+    background-color: rgba(255, 255, 255, 0.6) !important;
+    backdrop-filter: blur(12px) !important;
+}
+
+/* Glass Borders */
+body.light-theme .border-zinc-800,
+body.light-theme .border-zinc-800\/50,
+body.light-theme .border-zinc-800\/60,
+body.light-theme .border-zinc-700,
+body.light-theme .border-zinc-700\/50 {
+    border-color: rgba(255, 255, 255, 0.6) !important;
+    border-width: 1px !important;
+}
+
+body.light-theme .border-white\/5,
+body.light-theme .border-white\/10,
+body.light-theme .border-white\/20,
+body.light-theme .border-white\/30 {
+    border-color: rgba(255, 255, 255, 0.5) !important;
+}
+
+/* Texts */
+body.light-theme .text-white,
+body.light-theme .text-zinc-100,
+body.light-theme .text-zinc-200 {
+    color: #0f172a !important;
+}
+
+body.light-theme .text-zinc-300,
+body.light-theme .text-zinc-400 {
+    color: #334155 !important;
+}
+
+body.light-theme .text-zinc-500,
+body.light-theme .text-zinc-600 {
+    color: #475569 !important;
+}
+
+/* Hovers */
+body.light-theme .hover\:bg-zinc-800:hover {
+    background-color: rgba(255, 255, 255, 0.9) !important;
+}
+
+body.light-theme .hover\:text-white:hover {
+    color: #020617 !important;
+}
+
 /* Hide scrollbar for Chrome, Safari and Opera */
 .no-scrollbar::-webkit-scrollbar {
     display: none;

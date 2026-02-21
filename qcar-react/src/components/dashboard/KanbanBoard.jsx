@@ -3,7 +3,7 @@ import { createPortal } from 'react-dom';
 import { db, auth } from '../../lib/firebase';
 import { collection, addDoc, onSnapshot, query, orderBy, deleteDoc, doc, updateDoc, serverTimestamp, where, getDocs } from 'firebase/firestore';
 import { onAuthStateChanged } from 'firebase/auth';
-import { CheckSquare, Plus, Trash2, Maximize2, X, MoreHorizontal, User, UserPlus } from 'lucide-react';
+import { CheckSquare, Plus, Trash2, Maximize2, X, MoreHorizontal, User, UserPlus, Calendar } from 'lucide-react';
 import './DashboardWidgets.css';
 
 const COLUMNS = {
@@ -21,6 +21,7 @@ const KanbanBoard = ({ projectId }) => {
     const [draggedItem, setDraggedItem] = useState(null);
     const [newTask, setNewTask] = useState('');
     const [mentionQuery, setMentionQuery] = useState(null); // Query string after '@'
+    const [dueDate, setDueDate] = useState('');
 
     useEffect(() => {
         const unsubscribe = onAuthStateChanged(auth, (user) => {
@@ -76,6 +77,22 @@ const KanbanBoard = ({ projectId }) => {
     }, [projectId]);
 
 
+    const logActivity = async (action, details) => {
+        if (!currentUser || !projectId) return;
+        try {
+            await addDoc(collection(db, 'project_activity_logs'), {
+                projectId,
+                action,
+                details,
+                userId: currentUser.uid,
+                userName: currentUser.displayName || currentUser.email?.split('@')[0] || 'Unknown',
+                createdAt: serverTimestamp()
+            });
+        } catch (e) {
+            console.error("Activity logging failed", e);
+        }
+    };
+
     const handleAddTask = async (e) => {
         e.preventDefault();
         if (!newTask.trim() || !currentUser || !projectId) return;
@@ -112,9 +129,14 @@ const KanbanBoard = ({ projectId }) => {
                 createdByName: currentUser.displayName || currentUser.email?.split('@')[0],
                 assignedTo: assignedTo,
                 assignedToName: assignedToName,
+                dueDate: dueDate || null,
                 createdAt: serverTimestamp()
             });
+
+            logActivity('TASK_CREATED', `created task "${taskText.substring(0, 30)}${taskText.length > 30 ? '...' : ''}"`);
+
             setNewTask('');
+            setDueDate('');
             setMentionQuery(null);
         } catch (error) {
             console.error("Error adding task:", error);
@@ -122,8 +144,9 @@ const KanbanBoard = ({ projectId }) => {
         }
     };
 
-    const handleDelete = async (id) => {
-        await deleteDoc(doc(db, 'project_tasks', id));
+    const handleDelete = async (task) => {
+        await deleteDoc(doc(db, 'project_tasks', task.id));
+        logActivity('TASK_DELETED', `deleted task "${task.text.substring(0, 30)}${task.text.length > 30 ? '...' : ''}"`);
     };
 
     const handleDragStart = (e, task) => {
@@ -148,6 +171,7 @@ const KanbanBoard = ({ projectId }) => {
         try {
             const taskRef = doc(db, 'project_tasks', draggedItem.id);
             await updateDoc(taskRef, { status: targetStatus });
+            logActivity('TASK_UPDATED', `moved task to ${targetStatus.replace('_', ' ')}`);
         } catch (error) {
             console.error("Error moving task:", error);
         }
@@ -201,11 +225,18 @@ const KanbanBoard = ({ projectId }) => {
                                     <div className={`w-1.5 h-1.5 rounded-full shrink-0`} style={{ background: COLUMNS[task.status]?.color || '#fff' }}></div>
                                     <span className={`truncate flex-1 font-semibold ${task.status === 'done' ? 'line-through opacity-50' : ''}`}>{task.text}</span>
                                 </div>
-                                {task.assignedToName && (
-                                    <div className="text-[9px] text-emerald-400 flex items-center gap-1 pl-3.5">
-                                        <User size={8} /> {task.assignedToName}
-                                    </div>
-                                )}
+                                <div className="flex items-center justify-between pl-3.5 mt-0.5">
+                                    {task.assignedToName ? (
+                                        <div className="text-[9px] text-emerald-400 flex items-center gap-1">
+                                            <User size={8} /> {task.assignedToName}
+                                        </div>
+                                    ) : <div />}
+                                    {task.dueDate && (
+                                        <div className="text-[9px] text-orange-400/90 flex items-center gap-1 font-mono font-bold">
+                                            <Calendar size={8} /> {task.dueDate.split('-').slice(1).join('/')}
+                                        </div>
+                                    )}
+                                </div>
                             </div>
                         ))}
                         {tasks.length === 0 && <p className="text-zinc-600 text-xs text-center mt-4">No active tasks.</p>}
@@ -246,17 +277,26 @@ const KanbanBoard = ({ projectId }) => {
 
                 {/* Toolbar */}
                 <div className="p-4 border-b border-zinc-800 flex items-center gap-4 bg-[#0b0b0b] relative">
-                    <form onSubmit={handleAddTask} className="flex-1 max-w-lg relative flex items-center">
+                    <form onSubmit={handleAddTask} className="flex-1 max-w-xl relative flex items-center gap-2">
+                        <div className="flex-1 relative">
+                            <input
+                                type="text"
+                                value={newTask}
+                                onChange={handleInputChange}
+                                placeholder="Add a task (type @name to assign)..."
+                                className="w-full bg-zinc-900/50 border border-zinc-800 rounded-xl py-2.5 pl-4 pr-12 text-sm text-zinc-200 focus:border-emerald-500/50 focus:bg-zinc-900 outline-none transition-all"
+                            />
+                            <button type="submit" className="absolute right-2 top-1/2 -translate-y-1/2 p-1.5 bg-emerald-500/10 text-emerald-500 rounded-lg hover:bg-emerald-500 hover:text-black transition-colors">
+                                <Plus size={16} />
+                            </button>
+                        </div>
                         <input
-                            type="text"
-                            value={newTask}
-                            onChange={handleInputChange}
-                            placeholder="Add a task (type @name to assign)..."
-                            className="w-full bg-zinc-900/50 border border-zinc-800 rounded-xl py-2.5 pl-4 pr-12 text-sm text-zinc-200 focus:border-emerald-500/50 focus:bg-zinc-900 outline-none transition-all"
+                            type="date"
+                            value={dueDate}
+                            onChange={(e) => setDueDate(e.target.value)}
+                            className="bg-zinc-900/50 border border-zinc-800 rounded-xl py-2 px-3 text-xs text-zinc-400 focus:border-emerald-500/50 outline-none transition-all cursor-pointer h-[42px]"
+                            title="Set Due Date"
                         />
-                        <button type="submit" className="absolute right-2 p-1.5 bg-emerald-500/10 text-emerald-500 rounded-lg hover:bg-emerald-500 hover:text-black transition-colors">
-                            <Plus size={16} />
-                        </button>
 
                         {/* Mention Dropdown */}
                         {mentionQuery !== null && filteredUsers.length > 0 && (
@@ -318,13 +358,21 @@ const KanbanBoard = ({ projectId }) => {
 
                                             {/* Metadata Row */}
                                             <div className="flex flex-col gap-1.5 mt-2 border-t border-white/5 pt-2">
-                                                {/* Assigned To */}
-                                                {task.assignedToName && (
-                                                    <div className="flex items-center gap-1.5 text-emerald-400 text-xs font-medium">
-                                                        <User size={10} />
-                                                        <span>To: {task.assignedToName}</span>
-                                                    </div>
-                                                )}
+                                                {/* Assigned To & Due Date */}
+                                                <div className="flex items-center justify-between">
+                                                    {task.assignedToName ? (
+                                                        <div className="flex items-center gap-1.5 text-emerald-400 text-xs font-medium">
+                                                            <User size={10} />
+                                                            <span>To: {task.assignedToName}</span>
+                                                        </div>
+                                                    ) : <div />}
+                                                    {task.dueDate && (
+                                                        <div className="flex items-center gap-1 text-orange-400/90 text-[10px] font-mono font-bold bg-orange-500/10 px-1.5 py-0.5 rounded">
+                                                            <Calendar size={10} />
+                                                            <span>{task.dueDate}</span>
+                                                        </div>
+                                                    )}
+                                                </div>
 
                                                 {/* Assigned By (if not same as creator, or just creator) */}
                                                 {task.createdByName && task.createdBy !== currentUser?.uid && (
@@ -338,7 +386,7 @@ const KanbanBoard = ({ projectId }) => {
                                                         {task.createdAt?.seconds ? new Date(task.createdAt.seconds * 1000).toLocaleDateString() : 'Just now'}
                                                     </span>
                                                     <button
-                                                        onClick={() => handleDelete(task.id)}
+                                                        onClick={() => handleDelete(task)}
                                                         className="opacity-0 group-hover:opacity-100 text-red-900 hover:text-red-500 transition-all p-1"
                                                     >
                                                         <Trash2 size={12} />

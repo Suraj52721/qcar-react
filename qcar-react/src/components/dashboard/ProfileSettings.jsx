@@ -3,7 +3,7 @@ import { createPortal } from 'react-dom';
 import { auth, db } from '../../lib/firebase';
 import { doc, getDoc, setDoc, serverTimestamp } from 'firebase/firestore';
 import { supabase } from '../../lib/supabase';
-import { X, Upload, Save, User, Briefcase, FileText, Camera } from 'lucide-react';
+import { X, Upload, Save, User, Briefcase, FileText, Camera, Sun, Moon } from 'lucide-react';
 
 const ProfileSettings = ({ isOpen, onClose }) => {
     const [loading, setLoading] = useState(false);
@@ -20,6 +20,30 @@ const ProfileSettings = ({ isOpen, onClose }) => {
     });
 
     const currentUser = auth.currentUser;
+
+    const [theme, setTheme] = useState('dark');
+
+    useEffect(() => {
+        // Init theme
+        const stored = localStorage.getItem('qcar_theme') || 'dark';
+        setTheme(stored);
+        if (stored === 'light') {
+            document.body.classList.add('light-theme');
+        } else {
+            document.body.classList.remove('light-theme');
+        }
+    }, []);
+
+    const toggleTheme = () => {
+        const newTheme = theme === 'dark' ? 'light' : 'dark';
+        setTheme(newTheme);
+        localStorage.setItem('qcar_theme', newTheme);
+        if (newTheme === 'light') {
+            document.body.classList.add('light-theme');
+        } else {
+            document.body.classList.remove('light-theme');
+        }
+    };
 
     // Fetch existing profile on mount or when modal opens
     useEffect(() => {
@@ -184,8 +208,27 @@ const ProfileSettings = ({ isOpen, onClose }) => {
                             </div>
                         </div>
 
+                        {/* Appearance / Theme */}
+                        <div className="space-y-4 pt-4 border-t border-zinc-800/50">
+                            <h3 className="text-sm font-bold text-emerald-500 mb-2">Appearance</h3>
+                            <div className="flex items-center justify-between p-4 bg-zinc-900/50 border border-zinc-800 rounded-xl">
+                                <div>
+                                    <div className="text-sm font-bold text-white">App Theme</div>
+                                    <div className="text-xs text-zinc-500">Switch between dark and light modes.</div>
+                                </div>
+                                <button
+                                    type="button"
+                                    onClick={toggleTheme}
+                                    className="p-2 px-4 bg-zinc-800 hover:bg-emerald-500/20 text-zinc-400 hover:text-emerald-500 rounded-xl transition-colors flex items-center gap-2"
+                                >
+                                    {theme === 'dark' ? <Sun size={18} /> : <Moon size={18} />}
+                                    <span className="text-xs font-bold uppercase tracking-wider">{theme === 'dark' ? 'Light Mode' : 'Dark Mode'}</span>
+                                </button>
+                            </div>
+                        </div>
+
                         {/* Description (Short Bio) */}
-                        <div className="space-y-2">
+                        <div className="space-y-2 pt-4 border-t border-zinc-800/50">
                             <label className="text-xs font-bold text-zinc-500 uppercase tracking-widest">Short Bio (Card Description)</label>
                             <textarea
                                 name="description"

@@ -2,11 +2,11 @@ import React, { useState, useEffect, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { onAuthStateChanged, signOut } from 'firebase/auth';
 import { auth, db } from '../lib/firebase'; // Added db import
-import { collection, query, where, onSnapshot, addDoc, deleteDoc, doc, getDocs, updateDoc, serverTimestamp, orderBy } from 'firebase/firestore';
+import { collection, query, where, onSnapshot, addDoc, deleteDoc, doc, getDocs, updateDoc, serverTimestamp } from 'firebase/firestore';
 import {
     MessageSquare, FolderKanban, Clock,
     Send, LogOut, Video, CheckSquare, Book, Atom, Settings,
-    Plus, ChevronDown, Folder, Users, UserPlus, UserMinus, Check
+    Plus, ChevronDown, Folder, Users, UserPlus, UserMinus, Check, Home, Search, GripHorizontal, Sun, Moon
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 
@@ -21,27 +21,75 @@ import TeamPresence from '../components/dashboard/TeamPresence';
 
 import ProfileSettings from '../components/dashboard/ProfileSettings';
 
+import MyTasks from '../components/dashboard/MyTasks';
+import GlobalSearch from '../components/dashboard/GlobalSearch';
+
 // Import CSS for inner widget resets
 import './Dashboard.css';
 
 // --- AppBox Component ---
-const AppBox = ({ children, title, icon: Icon, span = "col-span-1", className = "" }) => (
-    <div className={`${span} bg-[#0d0d0d] border border-zinc-800/60 rounded-[2.5rem] p-6 flex flex-col hover:border-zinc-700/50 transition-all group relative overflow-hidden ${className}`}>
-        <div className="flex items-center gap-2 mb-4 z-10 relative">
-            <div className="p-2 bg-zinc-900 rounded-xl group-hover:bg-zinc-800 transition-colors text-zinc-400 group-hover:text-white">
-                {Icon && <Icon size={14} />}
+const AppBox = ({ children, title, icon: Icon, span = "col-span-1", className = "", draggable, onDragStart, onDragEnd, onDragOver, onDrop, widgetKey }) => {
+    const [isDragHandleActive, setIsDragHandleActive] = useState(false);
+
+    return (
+        <div
+            className={`${span} bg-[#0d0d0d] border border-zinc-800/60 rounded-[2.5rem] p-6 flex flex-col hover:border-zinc-700/50 transition-all group relative overflow-hidden ${className} ${isDragHandleActive ? 'cursor-grabbing' : ''}`}
+            draggable={draggable && isDragHandleActive}
+            onDragStart={(e) => draggable && isDragHandleActive && onDragStart(e, widgetKey)}
+            onDragEnd={(e) => {
+                setIsDragHandleActive(false);
+                if (onDragEnd) onDragEnd(e);
+            }}
+            onDragOver={onDragOver}
+            onDrop={(e) => draggable && onDrop(e, widgetKey)}
+        >
+            <div className="flex items-center gap-2 mb-4 z-10 relative">
+                <div className="p-2 bg-zinc-900 rounded-xl group-hover:bg-zinc-800 transition-colors text-zinc-400 group-hover:text-white shrink-0">
+                    {Icon && <Icon size={14} />}
+                </div>
+                <h3 className="text-[10px] uppercase tracking-[0.2em] font-bold text-zinc-500 truncate">{title}</h3>
+
+                {draggable && (
+                    <div
+                        className="ml-auto p-1.5 text-zinc-600 hover:text-white cursor-grab active:cursor-grabbing hover:bg-white/5 rounded-xl transition-colors shrink-0"
+                        onMouseEnter={() => setIsDragHandleActive(true)}
+                        onMouseLeave={() => setIsDragHandleActive(false)}
+                        onTouchStart={() => setIsDragHandleActive(true)}
+                        onTouchEnd={() => setIsDragHandleActive(false)}
+                        title="Drag to reposition widget"
+                    >
+                        <GripHorizontal size={16} />
+                    </div>
+                )}
             </div>
-            <h3 className="text-[10px] uppercase tracking-[0.2em] font-bold text-zinc-500">{title}</h3>
+            <div className="flex-1 overflow-hidden relative z-0">{children}</div>
         </div>
-        <div className="flex-1 overflow-hidden relative z-0">{children}</div>
-    </div>
-);
+    );
+};
 
 const Dashboard = () => {
     const navigate = useNavigate();
     const [user, setUser] = useState(null);
-    const [time, setTime] = useState(new Date());
     const [isSettingsOpen, setIsSettingsOpen] = useState(false);
+    const [isSearchOpen, setIsSearchOpen] = useState(false);
+
+    // Theme Management
+    const [theme, setTheme] = useState(() => {
+        const stored = localStorage.getItem('qcar_theme') || 'dark';
+        if (stored === 'light') document.body.classList.add('light-theme');
+        return stored;
+    });
+
+    const toggleTheme = () => {
+        const newTheme = theme === 'dark' ? 'light' : 'dark';
+        setTheme(newTheme);
+        localStorage.setItem('qcar_theme', newTheme);
+        if (newTheme === 'light') {
+            document.body.classList.add('light-theme');
+        } else {
+            document.body.classList.remove('light-theme');
+        }
+    };
 
     // Project State
     const [projects, setProjects] = useState([]);
@@ -57,6 +105,64 @@ const Dashboard = () => {
     const [managingProject, setManagingProject] = useState(null);
     const [managingMembers, setManagingMembers] = useState([]);
 
+    // Widget Configuration mapping
+    const WIDGET_CONFIG = {
+        research: { title: "Research Focus", icon: Atom, span: "col-span-1 md:col-span-2 row-span-2", component: ({ projectId }) => <ResearchTimeline projectId={projectId} /> },
+        chat: { title: "Messenger", icon: MessageSquare, span: "col-span-1 row-span-2", component: () => <Chat /> },
+        kanban: { title: "Task Force", icon: CheckSquare, span: "col-span-1 row-span-2", component: ({ projectId }) => <KanbanBoard projectId={projectId} /> },
+        mytasks: { title: "Assigned to Me", icon: Check, span: "col-span-1", component: () => <MyTasks /> },
+        clock: { title: "Chronometer", icon: Clock, span: "col-span-1", className: "flex flex-col items-center justify-center", component: () => <ClockWidget /> },
+        notes: { title: "Lab Notebook", icon: Book, span: "col-span-1", component: ({ projectId }) => <LabNotebook projectId={projectId} /> },
+        meeting: {
+            title: "Uplink", icon: Video, span: "col-span-1", component: () => (
+                <button
+                    onClick={() => window.open('https://meet.google.com/yqj-hjme-bau', '_blank')}
+                    className="w-full h-full bg-zinc-900/50 border border-white/5 rounded-2xl flex flex-col items-center justify-center gap-3 hover:bg-emerald-500/10 hover:border-emerald-500/50 hover:text-emerald-400 transition group/btn"
+                >
+                    <div className="p-3 bg-zinc-800 rounded-full group-hover/btn:bg-emerald-500 group-hover/btn:text-black transition-colors">
+                        <Video size={24} />
+                    </div>
+                    <span className="text-[10px] font-bold uppercase tracking-widest">Start Meeting</span>
+                </button>
+            )
+        },
+        docs: { title: "Documents", icon: FolderKanban, span: "col-span-1 md:col-span-2", component: ({ projectId }) => <DocumentRepo projectId={projectId} /> }
+    };
+
+    const DEFAULT_LAYOUT = ['research', 'chat', 'kanban', 'mytasks', 'clock', 'notes', 'meeting', 'docs'];
+
+    // Manage layout state
+    const [layout, setLayout] = useState(() => {
+        const saved = localStorage.getItem('dashboard_layout');
+        if (saved) {
+            try { return JSON.parse(saved); } catch { return DEFAULT_LAYOUT; }
+        }
+        return DEFAULT_LAYOUT;
+    });
+
+    useEffect(() => {
+        localStorage.setItem('dashboard_layout', JSON.stringify(layout));
+    }, [layout]);
+
+    const handleDragStart = (e, key) => { e.dataTransfer.setData('widgetKey', key); };
+    const handleDragOver = (e) => { e.preventDefault(); };
+    const handleDrop = (e, targetKey) => {
+        e.preventDefault();
+        const sourceKey = e.dataTransfer.getData('widgetKey');
+        if (sourceKey === targetKey) return;
+
+        setLayout(prev => {
+            const newLayout = [...prev];
+            const sourceIdx = newLayout.indexOf(sourceKey);
+            const targetIdx = newLayout.indexOf(targetKey);
+            // Swap
+            newLayout[sourceIdx] = targetKey;
+            newLayout[targetIdx] = sourceKey;
+            return newLayout;
+        });
+    };
+    const handleDragEnd = () => { };
+
     useEffect(() => {
         const unsubscribe = onAuthStateChanged(auth, (currentUser) => {
             if (!currentUser) {
@@ -67,11 +173,6 @@ const Dashboard = () => {
         });
         return () => unsubscribe();
     }, [navigate]);
-
-    useEffect(() => {
-        const timer = setInterval(() => setTime(new Date()), 1000);
-        return () => clearInterval(timer);
-    }, []);
 
     // Fetch all users for the member picker
     useEffect(() => {
@@ -134,6 +235,22 @@ const Dashboard = () => {
     }, [user]);
 
 
+    const logActivity = async (action, details, projectId) => {
+        if (!user || !projectId) return;
+        try {
+            await addDoc(collection(db, 'project_activity_logs'), {
+                projectId,
+                action,
+                details,
+                userId: user.uid,
+                userName: user.displayName || user.email?.split('@')[0] || 'Unknown',
+                createdAt: serverTimestamp()
+            });
+        } catch (e) {
+            console.error("Activity logging failed", e);
+        }
+    };
+
     const handleLogout = async () => {
         try {
             await signOut(auth);
@@ -166,6 +283,8 @@ const Dashboard = () => {
                 members: members
             });
 
+            logActivity('PROJECT_CREATED', `created project "${newProjectName}"`, docRef.id);
+
             setNewProjectName('');
             setSelectedMembers([]);
             setIsNewProjectModalOpen(false);
@@ -197,6 +316,11 @@ const Dashboard = () => {
             await updateDoc(doc(db, 'projects', managingProject.id), {
                 members: finalMembers
             });
+
+            const addedCount = finalMembers.length - managingProject.members.length;
+            if (addedCount > 0) logActivity('MEMBER_ADDED', `added ${addedCount} member(s)`, managingProject.id);
+            else if (addedCount < 0) logActivity('MEMBER_REMOVED', `removed ${Math.abs(addedCount)} member(s)`, managingProject.id);
+
             setIsMembersModalOpen(false);
             setManagingProject(null);
         } catch (error) {
@@ -241,39 +365,39 @@ const Dashboard = () => {
     return (
         <div className="min-h-screen bg-black text-zinc-300 p-6 md:p-10 font-space">
             {/* HEADER */}
-            <div className="max-w-[1600px] mx-auto mb-8 flex justify-between items-end">
-                <div>
-                    <h1 className="text-white text-4xl font-light tracking-tighter" style={{ fontFamily: 'Space Grotesk, sans-serif' }}>
+            <div className="max-w-[1600px] mx-auto mb-6 md:mb-8 flex flex-col md:flex-row justify-between items-start md:items-end gap-6 md:gap-0">
+                <div className="w-full md:w-auto">
+                    <h1 className="text-3xl md:text-4xl font-light tracking-tighter" style={{ fontFamily: 'Space Grotesk, sans-serif' }}>
                         {welcomeMessage}
                     </h1>
-                    <div className="flex items-center gap-4 mt-2">
+                    <div className="flex flex-wrap items-center gap-3 md:gap-4 mt-2">
                         <div className="flex items-center gap-2">
                             <span className="w-2 h-2 bg-emerald-500 rounded-full animate-pulse"></span>
                             <p className="text-zinc-600 text-[10px] font-mono uppercase tracking-[0.2em]">
                                 System: Nominal
                             </p>
                         </div>
-                        <div className="h-4 w-px bg-zinc-800"></div>
+                        <div className="h-4 w-px bg-zinc-800 hidden md:block"></div>
                         <TeamPresence />
                     </div>
                 </div>
-                <div className="flex items-center gap-3">
+                <div className="flex flex-wrap items-center justify-start md:justify-end gap-2 md:gap-3 w-full md:w-auto">
                     {/* Project Switcher */}
-                    <div className="relative">
+                    <div className="relative w-full sm:w-auto">
                         <button
                             onClick={() => setIsProjectDropdownOpen(!isProjectDropdownOpen)}
-                            className="p-4 bg-[#0d0d0d] border border-zinc-800 rounded-3xl text-zinc-300 hover:text-emerald-400 hover:border-emerald-500/30 transition flex items-center gap-2 min-w-[200px]"
+                            className="p-3 md:p-4 w-full sm:w-auto bg-[#0d0d0d] border border-zinc-800 rounded-2xl md:rounded-3xl text-zinc-300 hover:text-emerald-400 hover:border-emerald-500/30 transition flex items-center gap-2 min-w-[200px]"
                             title="Switch Project"
                         >
-                            <Folder size={20} className="text-emerald-500" />
+                            <Folder size={20} className="text-emerald-500 flex-shrink-0" />
                             <span className="text-sm font-bold truncate flex-1 text-left">
                                 {activeProject ? activeProject.name : 'Select Project'}
                             </span>
-                            <ChevronDown size={14} className={`transition-transform ${isProjectDropdownOpen ? 'rotate-180' : ''}`} />
+                            <ChevronDown size={14} className={`transition-transform flex-shrink-0 ${isProjectDropdownOpen ? 'rotate-180' : ''}`} />
                         </button>
 
                         {isProjectDropdownOpen && (
-                            <div className="absolute top-full right-0 mt-2 w-64 bg-[#0d0d0d] border border-zinc-800 rounded-2xl shadow-xl overflow-hidden z-50 animate-in fade-in slide-in-from-top-2">
+                            <div className="absolute top-full right-0 left-0 sm:left-auto mt-2 w-full sm:w-64 bg-[#0d0d0d] border border-zinc-800 rounded-2xl shadow-xl overflow-hidden z-50 animate-in fade-in slide-in-from-top-2">
                                 <div className="p-2 space-y-1 max-h-60 overflow-y-auto">
                                     {projects.map(project => (
                                         <div
@@ -324,20 +448,58 @@ const Dashboard = () => {
                     </div>
 
                     <button
+                        onClick={() => navigate('/')}
+                        className="p-3 md:p-4 flex-1 sm:flex-none justify-center bg-[#0d0d0d] border border-zinc-800 rounded-2xl md:rounded-3xl text-zinc-600 hover:text-emerald-400 hover:border-emerald-500/30 transition flex items-center gap-2"
+                        title="Home"
+                    >
+                        <span className="text-[10px] md:text-xs font-bold uppercase hidden sm:block">Home</span>
+                        <Home size={20} className="w-5 h-5" />
+                    </button>
+                    <button
+                        onClick={() => navigate('/chat')}
+                        className="p-3 md:p-4 flex-1 sm:flex-none justify-center bg-[#0d0d0d] border border-zinc-800 rounded-2xl md:rounded-3xl text-zinc-600 hover:text-emerald-400 hover:border-emerald-500/30 transition flex items-center gap-2"
+                        title="Chat"
+                    >
+                        <span className="text-[10px] md:text-xs font-bold uppercase hidden sm:block">Chat</span>
+                        <MessageSquare size={20} className="w-5 h-5" />
+                    </button>
+
+                    <button
+                        onClick={() => setIsSearchOpen(true)}
+                        className="p-3 md:p-4 flex-1 sm:flex-none justify-center bg-[#0d0d0d] border border-zinc-800 rounded-2xl md:rounded-3xl text-zinc-600 hover:text-emerald-400 hover:border-emerald-500/30 transition flex items-center gap-2"
+                        title="Search"
+                    >
+                        <span className="text-[10px] md:text-xs font-bold uppercase hidden sm:block">Search</span>
+                        <Search size={20} className="w-5 h-5" />
+                    </button>
+
+                    {/* Theme Toggle Button added next to search */}
+                    <button
+                        onClick={toggleTheme}
+                        className="p-3 md:p-4 flex-1 sm:flex-none justify-center bg-[#0d0d0d] border border-zinc-800 rounded-2xl md:rounded-3xl text-zinc-600 hover:text-emerald-400 hover:border-emerald-500/30 transition flex items-center gap-2"
+                        title={theme === 'dark' ? "Switch to Light Mode" : "Switch to Dark Mode"}
+                    >
+                        <span className="text-[10px] md:text-xs font-bold uppercase hidden sm:block">
+                            {theme === 'dark' ? 'Light' : 'Dark'}
+                        </span>
+                        {theme === 'dark' ? <Sun size={20} className="w-5 h-5" /> : <Moon size={20} className="w-5 h-5" />}
+                    </button>
+
+                    <button
                         onClick={() => setIsSettingsOpen(true)}
-                        className="p-4 bg-[#0d0d0d] border border-zinc-800 rounded-3xl text-zinc-600 hover:text-emerald-400 hover:border-emerald-500/30 transition flex items-center gap-2"
+                        className="p-3 md:p-4 flex-1 sm:flex-none justify-center bg-[#0d0d0d] border border-zinc-800 rounded-2xl md:rounded-3xl text-zinc-600 hover:text-emerald-400 hover:border-emerald-500/30 transition flex items-center gap-2"
                         title="Profile Settings"
                     >
-                        <span className="text-xs font-bold uppercase hidden md:block">Settings</span>
-                        <Settings size={20} />
+                        <span className="text-[10px] md:text-xs font-bold uppercase hidden sm:block">Settings</span>
+                        <Settings size={20} className="w-5 h-5" />
                     </button>
                     <button
                         onClick={handleLogout}
-                        className="p-4 bg-[#0d0d0d] border border-zinc-800 rounded-3xl text-zinc-600 hover:text-red-400 hover:border-red-900 transition flex items-center gap-2"
+                        className="p-3 md:p-4 flex-1 sm:flex-none justify-center bg-[#0d0d0d] border border-zinc-800 rounded-2xl md:rounded-3xl text-zinc-600 hover:text-red-400 hover:border-red-900 transition flex items-center gap-2"
                         title="Disconnect"
                     >
-                        <span className="text-xs font-bold uppercase hidden md:block">Disconnect</span>
-                        <LogOut size={20} />
+                        <span className="text-[10px] md:text-xs font-bold uppercase hidden sm:block">Disconnect</span>
+                        <LogOut size={20} className="w-5 h-5" />
                     </button>
                 </div>
             </div>
@@ -377,8 +539,8 @@ const Dashboard = () => {
                                                 key={u.uid}
                                                 onClick={() => toggleMemberSelection(u.uid)}
                                                 className={`flex items-center gap-3 p-2 rounded-lg cursor-pointer transition-colors ${selectedMembers.includes(u.uid)
-                                                        ? 'bg-emerald-500/15 border border-emerald-500/30'
-                                                        : 'hover:bg-white/5 border border-transparent'
+                                                    ? 'bg-emerald-500/15 border border-emerald-500/30'
+                                                    : 'hover:bg-white/5 border border-transparent'
                                                     }`}
                                             >
                                                 <div className="w-8 h-8 rounded-full bg-zinc-800 flex items-center justify-center overflow-hidden flex-shrink-0">
@@ -426,6 +588,8 @@ const Dashboard = () => {
                 )}
             </AnimatePresence>
 
+            <GlobalSearch isOpen={isSearchOpen} onClose={() => setIsSearchOpen(false)} user={user} />
+
             {/* Manage Members Modal */}
             <AnimatePresence>
                 {isMembersModalOpen && managingProject && (
@@ -452,10 +616,10 @@ const Dashboard = () => {
                                             key={u.uid}
                                             onClick={() => !isCreator && toggleManagingMember(u.uid)}
                                             className={`flex items-center gap-3 p-2 rounded-lg transition-colors ${isCreator
-                                                    ? 'bg-emerald-500/10 border border-emerald-500/20 cursor-default'
-                                                    : isMember
-                                                        ? 'bg-emerald-500/15 border border-emerald-500/30 cursor-pointer'
-                                                        : 'hover:bg-white/5 border border-transparent cursor-pointer'
+                                                ? 'bg-emerald-500/10 border border-emerald-500/20 cursor-default'
+                                                : isMember
+                                                    ? 'bg-emerald-500/15 border border-emerald-500/30 cursor-pointer'
+                                                    : 'hover:bg-white/5 border border-transparent cursor-pointer'
                                                 }`}
                                         >
                                             <div className="w-8 h-8 rounded-full bg-zinc-800 flex items-center justify-center overflow-hidden flex-shrink-0">
@@ -509,49 +673,27 @@ const Dashboard = () => {
 
                 {activeProject ? (
                     <>
-                        {/* 1. RESEARCH TIMELINE (Double Wide, Double Tall) */}
-                        <AppBox title="Research Focus" icon={Atom} span="md:col-span-2 md:row-span-2">
-                            <ResearchTimeline projectId={activeProject.id} />
-                        </AppBox>
-
-                        {/* 2. MESSENGER (Single Wide, Double Tall) - GLOBAL CHAT (No projectId) */}
-                        <AppBox title="Messenger" icon={MessageSquare} span="md:col-span-1 md:row-span-2">
-                            <Chat />
-                        </AppBox>
-
-                        {/* 3. TODO LIST (Single Wide, Double Tall) */}
-                        <AppBox title="Task Force" icon={CheckSquare} span="md:col-span-1 md:row-span-2">
-                            <KanbanBoard projectId={activeProject.id} />
-                        </AppBox>
-
-                        {/* 4. CLOCK (Single Wide, Single Tall) */}
-                        <AppBox title="Chronometer" icon={Clock} className="flex flex-col items-center justify-center">
-                            <ClockWidget />
-                        </AppBox>
-
-                        {/* 5. NOTES (Single Wide, Single Tall) */}
-                        <AppBox title="Lab Notebook" icon={Book}>
-                            <LabNotebook projectId={activeProject.id} />
-                        </AppBox>
-
-                        {/* 6. MEETING (Single Wide, Single Tall) */}
-                        <AppBox title="Uplink" icon={Video}>
-                            <button
-                                onClick={() => window.open('https://meet.google.com/yqj-hjme-bau', '_blank')}
-                                className="w-full h-full bg-zinc-900/50 border border-white/5 rounded-2xl flex flex-col items-center justify-center gap-3 hover:bg-emerald-500/10 hover:border-emerald-500/50 hover:text-emerald-400 transition group/btn"
-                            >
-                                <div className="p-3 bg-zinc-800 rounded-full group-hover/btn:bg-emerald-500 group-hover/btn:text-black transition-colors">
-                                    <Video size={24} />
-                                </div>
-                                <span className="text-[10px] font-bold uppercase tracking-widest">Start Meeting</span>
-                            </button>
-                        </AppBox>
-
-
-                        {/* 7. DOCUMENT REPO (Double Wide, Single Tall) */}
-                        <AppBox title="Documents" icon={FolderKanban} span="md:col-span-1">
-                            <DocumentRepo projectId={activeProject.id} />
-                        </AppBox>
+                        {layout.map(key => {
+                            const conf = WIDGET_CONFIG[key];
+                            if (!conf) return null;
+                            return (
+                                <AppBox
+                                    key={key}
+                                    widgetKey={key}
+                                    title={conf.title}
+                                    icon={conf.icon}
+                                    span={conf.span}
+                                    className={conf.className}
+                                    draggable={true}
+                                    onDragStart={handleDragStart}
+                                    onDragEnd={handleDragEnd}
+                                    onDragOver={handleDragOver}
+                                    onDrop={handleDrop}
+                                >
+                                    {conf.component({ projectId: activeProject.id })}
+                                </AppBox>
+                            );
+                        })}
                     </>
                 ) : (
                     <div className="col-span-1 md:col-span-4 row-span-2 flex flex-col items-center justify-center border border-dashed border-zinc-800 rounded-[2.5rem] bg-[#0d0d0d]/50 p-10 text-center">

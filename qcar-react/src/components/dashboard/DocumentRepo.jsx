@@ -35,6 +35,22 @@ const DocumentRepo = ({ projectId }) => { // Accept projectId
         return () => unsubscribe();
     }, [currentUser, projectId]);
 
+    const logActivity = async (action, details) => {
+        if (!currentUser || !projectId) return;
+        try {
+            await addDoc(collection(db, 'project_activity_logs'), {
+                projectId,
+                action,
+                details,
+                userId: currentUser.uid,
+                userName: currentUser.displayName || currentUser.email?.split('@')[0] || 'Unknown',
+                createdAt: serverTimestamp()
+            });
+        } catch (e) {
+            console.error("Activity logging failed", e);
+        }
+    };
+
     const handleUpload = async (e) => {
         const file = e.target.files[0];
         if (!file || !currentUser || !projectId) return;
@@ -67,6 +83,8 @@ const DocumentRepo = ({ projectId }) => { // Accept projectId
                 projectId: projectId, // Save with project ID
                 createdAt: serverTimestamp()
             });
+
+            logActivity('DOCUMENT_UPLOADED', `uploaded document "${file.name}"`);
 
         } catch (error) {
             console.error("Upload failed:", error);
