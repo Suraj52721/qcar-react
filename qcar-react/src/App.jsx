@@ -10,6 +10,8 @@ import Contact from './pages/Contact';
 import Login from './pages/Auth/Login';
 import Dashboard from './pages/Dashboard';
 import ChatPage from './pages/ChatPage';
+import Games from './pages/Games';
+import ChessGamePage from './pages/ChessGame';
 import { GlobalNotificationProvider } from './components/GlobalNotificationProvider';
 import './styles/global.css';
 
@@ -25,6 +27,9 @@ function App() {
               <Route path="team" element={<Team />} />
               <Route path="research" element={<Research />} />
               <Route path="contact" element={<Contact />} />
+              <Route path="games" element={<Games />} />
+              <Route path="games/chess" element={<ChessGamePage />} />
+              <Route path="games/chess/:gameId" element={<ChessGamePage />} />
             </Route>
             <Route path="/login" element={<Login />} />
             <Route path="/dashboard" element={

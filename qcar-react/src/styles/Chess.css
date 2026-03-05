@@ -1,0 +1,995 @@
+/* ============================================================
+   Chess.css — All Chess Game Styles
+   ============================================================ */
+
+/* Games Hub Page */
+.games-hub {
+  min-height: 100vh;
+  padding: 120px 5vw 60px;
+  background: #000;
+  color: #fff;
+}
+
+.games-hub-header {
+  text-align: center;
+  margin-bottom: 3rem;
+}
+
+.games-hub-header h1 {
+  font-size: clamp(2rem, 4vw, 3.5rem);
+  font-weight: 800;
+  background: linear-gradient(135deg, #89a783, #c5e0bf);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+  margin-bottom: 0.5rem;
+}
+
+.games-hub-header p {
+  color: rgba(255, 255, 255, 0.5);
+  font-size: 1.1rem;
+}
+
+.games-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+  gap: 1.5rem;
+  max-width: 1200px;
+  margin: 0 auto;
+}
+
+.game-card {
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid rgba(137, 167, 131, 0.2);
+  border-radius: 16px;
+  padding: 2rem;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  position: relative;
+  overflow: hidden;
+}
+
+.game-card::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: linear-gradient(135deg, rgba(137, 167, 131, 0.05), transparent);
+  opacity: 0;
+  transition: opacity 0.3s;
+}
+
+.game-card:hover {
+  border-color: rgba(137, 167, 131, 0.5);
+  transform: translateY(-4px);
+  box-shadow: 0 8px 32px rgba(137, 167, 131, 0.15);
+}
+
+.game-card:hover::before {
+  opacity: 1;
+}
+
+.game-card-icon {
+  font-size: 3rem;
+  margin-bottom: 1rem;
+}
+
+.game-card h3 {
+  font-size: 1.4rem;
+  font-weight: 700;
+  margin-bottom: 0.5rem;
+  color: #fff;
+}
+
+.game-card p {
+  color: rgba(255, 255, 255, 0.5);
+  font-size: 0.95rem;
+  line-height: 1.5;
+  margin-bottom: 1.5rem;
+}
+
+.game-card-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.6rem 1.5rem;
+  background: rgba(137, 167, 131, 0.15);
+  border: 1px solid rgba(137, 167, 131, 0.3);
+  border-radius: 8px;
+  color: #89a783;
+  font-weight: 600;
+  font-size: 0.9rem;
+  cursor: pointer;
+  transition: all 0.2s;
+  position: relative;
+  z-index: 1;
+}
+
+.game-card-btn:hover {
+  background: rgba(137, 167, 131, 0.3);
+  color: #c5e0bf;
+}
+
+/* Chess Game Layout */
+.chess-page {
+  min-height: 100vh;
+  padding: 80px 2vw 40px;
+  background: #000;
+  color: #fff;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.chess-lobby {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  min-height: 60vh;
+  gap: 2rem;
+  text-align: center;
+  width: 100%;
+  max-width: 500px;
+}
+
+.chess-lobby h1 {
+  font-size: 2.5rem;
+  font-weight: 800;
+  background: linear-gradient(135deg, #89a783, #c5e0bf);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+.lobby-actions {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+  width: 100%;
+}
+
+.lobby-btn {
+  padding: 1rem 2rem;
+  border-radius: 12px;
+  font-size: 1.1rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s;
+  border: none;
+  font-family: inherit;
+}
+
+.lobby-btn-primary {
+  background: linear-gradient(135deg, #89a783, #6b8f65);
+  color: #000;
+}
+
+.lobby-btn-primary:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 20px rgba(137, 167, 131, 0.4);
+}
+
+.lobby-btn-secondary {
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(137, 167, 131, 0.3);
+  color: #89a783;
+}
+
+.lobby-btn-secondary:hover {
+  background: rgba(137, 167, 131, 0.1);
+}
+
+.lobby-btn-local {
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  color: rgba(255, 255, 255, 0.6);
+}
+
+.lobby-btn-local:hover {
+  border-color: rgba(255, 255, 255, 0.3);
+  color: #fff;
+}
+
+.lobby-input-group {
+  display: flex;
+  gap: 0.5rem;
+  width: 100%;
+}
+
+.lobby-input {
+  flex: 1;
+  padding: 1rem;
+  border-radius: 12px;
+  border: 1px solid rgba(137, 167, 131, 0.3);
+  background: rgba(255, 255, 255, 0.05);
+  color: #fff;
+  font-size: 1.1rem;
+  font-family: inherit;
+  text-transform: uppercase;
+  letter-spacing: 0.15em;
+  text-align: center;
+  outline: none;
+}
+
+.lobby-input::placeholder {
+  text-transform: none;
+  letter-spacing: normal;
+  color: rgba(255, 255, 255, 0.3);
+}
+
+.lobby-input:focus {
+  border-color: #89a783;
+  box-shadow: 0 0 0 3px rgba(137, 167, 131, 0.15);
+}
+
+.waiting-room {
+  text-align: center;
+  padding: 2rem;
+}
+
+.game-code-display {
+  font-size: 3rem;
+  font-weight: 800;
+  letter-spacing: 0.3em;
+  color: #89a783;
+  background: rgba(137, 167, 131, 0.1);
+  padding: 1rem 2rem;
+  border-radius: 12px;
+  margin: 1rem 0;
+  font-family: monospace;
+}
+
+.time-selector {
+  display: flex;
+  gap: 0.5rem;
+  justify-content: center;
+  flex-wrap: wrap;
+  margin: 1rem 0;
+}
+
+.time-btn {
+  padding: 0.5rem 1rem;
+  border-radius: 8px;
+  border: 1px solid rgba(137, 167, 131, 0.2);
+  background: rgba(255, 255, 255, 0.03);
+  color: rgba(255, 255, 255, 0.6);
+  cursor: pointer;
+  font-size: 0.85rem;
+  font-family: inherit;
+  transition: all 0.2s;
+}
+
+.time-btn.active {
+  background: rgba(137, 167, 131, 0.2);
+  border-color: #89a783;
+  color: #89a783;
+}
+
+.time-btn:hover {
+  border-color: #89a783;
+}
+
+/* Chess Game Container */
+.chess-game-container {
+  display: flex;
+  gap: 1.5rem;
+  align-items: flex-start;
+  justify-content: center;
+  width: 100%;
+  max-width: 1100px;
+  padding: 0 1rem;
+}
+
+/* Chess Board */
+.chess-board-wrapper {
+  position: relative;
+  flex-shrink: 0;
+}
+
+.chess-board {
+  display: grid;
+  grid-template-columns: repeat(8, 1fr);
+  grid-template-rows: repeat(8, 1fr);
+  border: 2px solid rgba(137, 167, 131, 0.3);
+  border-radius: 4px;
+  overflow: hidden;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.5);
+}
+
+.chess-board.size-sm {
+  width: 320px;
+  height: 320px;
+}
+
+.chess-board.size-md {
+  width: 440px;
+  height: 440px;
+}
+
+.chess-board.size-lg {
+  width: 560px;
+  height: 560px;
+}
+
+.chess-square {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: background-color 0.15s;
+  aspect-ratio: 1;
+}
+
+.chess-square.selected {
+  box-shadow: inset 0 0 0 3px rgba(137, 167, 131, 0.8);
+}
+
+.chess-square.valid-move::after {
+  content: '';
+  position: absolute;
+  width: 30%;
+  height: 30%;
+  border-radius: 50%;
+  background: rgba(137, 167, 131, 0.4);
+  pointer-events: none;
+  z-index: 2;
+}
+
+.chess-square.valid-capture::after {
+  content: '';
+  position: absolute;
+  width: 85%;
+  height: 85%;
+  border-radius: 50%;
+  border: 3px solid rgba(137, 167, 131, 0.4);
+  background: transparent;
+  pointer-events: none;
+  z-index: 2;
+}
+
+.chess-square.last-move {
+  background: rgba(137, 167, 131, 0.2) !important;
+}
+
+.chess-square.check-square {
+  background: radial-gradient(circle, rgba(255, 50, 50, 0.6), transparent 70%) !important;
+}
+
+.chess-square:hover {
+  filter: brightness(1.15);
+}
+
+.chess-square .coord-label {
+  position: absolute;
+  font-size: 0.6rem;
+  font-weight: 700;
+  opacity: 0.5;
+  pointer-events: none;
+  z-index: 1;
+}
+
+.chess-square .coord-file {
+  bottom: 2px;
+  right: 3px;
+}
+
+.chess-square .coord-rank {
+  top: 2px;
+  left: 3px;
+}
+
+/* Chess Piece */
+.chess-piece {
+  width: 80%;
+  height: 80%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 3;
+  user-select: none;
+  -webkit-user-select: none;
+  pointer-events: none;
+  transition: transform 0.15s ease;
+}
+
+.chess-piece svg {
+  width: 100%;
+  height: 100%;
+  filter: drop-shadow(1px 1px 2px rgba(0, 0, 0, 0.3));
+}
+
+/* Side Panel */
+.chess-side-panel {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+  width: 280px;
+  flex-shrink: 0;
+}
+
+/* Player Info */
+.player-info {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 0.75rem 1rem;
+  background: rgba(255, 255, 255, 0.03);
+  border-radius: 12px;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.player-info.active-turn {
+  border-color: rgba(137, 167, 131, 0.4);
+  background: rgba(137, 167, 131, 0.08);
+}
+
+.player-avatar {
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 700;
+  font-size: 0.85rem;
+}
+
+.player-avatar.white {
+  background: #f0f0f0;
+  color: #333;
+}
+
+.player-avatar.black {
+  background: #333;
+  color: #f0f0f0;
+}
+
+.player-name {
+  flex: 1;
+  font-weight: 600;
+  font-size: 0.9rem;
+}
+
+/* Chess Timer */
+.chess-timer {
+  font-family: 'JetBrains Mono', 'Fira Code', monospace;
+  font-size: 1.3rem;
+  font-weight: 700;
+  padding: 0.3rem 0.7rem;
+  border-radius: 6px;
+  min-width: 70px;
+  text-align: center;
+}
+
+.chess-timer.active {
+  background: rgba(137, 167, 131, 0.2);
+  color: #89a783;
+}
+
+.chess-timer.inactive {
+  background: rgba(255, 255, 255, 0.05);
+  color: rgba(255, 255, 255, 0.4);
+}
+
+.chess-timer.low-time {
+  background: rgba(255, 80, 80, 0.2);
+  color: #ff5050;
+  animation: timerPulse 1s ease-in-out infinite;
+}
+
+@keyframes timerPulse {
+
+  0%,
+  100% {
+    opacity: 1;
+  }
+
+  50% {
+    opacity: 0.6;
+  }
+}
+
+/* Move History */
+.move-history {
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 12px;
+  padding: 1rem;
+  max-height: 300px;
+  overflow-y: auto;
+  flex: 1;
+}
+
+.move-history-title {
+  font-size: 0.8rem;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  color: rgba(255, 255, 255, 0.4);
+  margin-bottom: 0.75rem;
+  font-weight: 600;
+}
+
+.move-history-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.15rem;
+}
+
+.move-row {
+  display: flex;
+  align-items: center;
+  gap: 0.25rem;
+  font-size: 0.85rem;
+}
+
+.move-number {
+  color: rgba(255, 255, 255, 0.3);
+  min-width: 28px;
+  text-align: right;
+  padding-right: 4px;
+  font-weight: 600;
+}
+
+.move-notation {
+  padding: 0.15rem 0.4rem;
+  border-radius: 4px;
+  cursor: pointer;
+  min-width: 48px;
+  text-align: center;
+  transition: background 0.15s;
+  font-family: 'JetBrains Mono', 'Fira Code', monospace;
+  font-size: 0.8rem;
+}
+
+.move-notation:hover {
+  background: rgba(137, 167, 131, 0.15);
+}
+
+.move-notation.current {
+  background: rgba(137, 167, 131, 0.2);
+  color: #89a783;
+}
+
+/* Game Controls */
+.game-controls {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.control-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  padding: 0.6rem;
+  border-radius: 8px;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  background: rgba(255, 255, 255, 0.03);
+  color: rgba(255, 255, 255, 0.7);
+  cursor: pointer;
+  font-family: inherit;
+  font-size: 0.85rem;
+  font-weight: 500;
+  transition: all 0.2s;
+}
+
+.control-btn:hover {
+  background: rgba(255, 255, 255, 0.08);
+  color: #fff;
+  border-color: rgba(255, 255, 255, 0.2);
+}
+
+.control-btn:disabled {
+  opacity: 0.3;
+  cursor: not-allowed;
+}
+
+.control-btn.danger {
+  border-color: rgba(255, 80, 80, 0.2);
+  color: rgba(255, 80, 80, 0.7);
+}
+
+.control-btn.danger:hover {
+  background: rgba(255, 80, 80, 0.1);
+  border-color: rgba(255, 80, 80, 0.4);
+  color: #ff5050;
+}
+
+.control-row {
+  display: flex;
+  gap: 0.5rem;
+}
+
+.control-row .control-btn {
+  flex: 1;
+}
+
+/* Game Status Banner */
+.game-status-banner {
+  text-align: center;
+  padding: 1rem;
+  border-radius: 12px;
+  margin-bottom: 1rem;
+  font-weight: 700;
+  font-size: 1rem;
+}
+
+.game-status-banner.check {
+  background: rgba(255, 200, 0, 0.1);
+  border: 1px solid rgba(255, 200, 0, 0.3);
+  color: #ffc800;
+}
+
+.game-status-banner.ended {
+  background: rgba(137, 167, 131, 0.1);
+  border: 1px solid rgba(137, 167, 131, 0.3);
+  color: #89a783;
+}
+
+/* Promotion Dialog */
+.promotion-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.7);
+  backdrop-filter: blur(4px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+}
+
+.promotion-dialog {
+  background: #1a1a1a;
+  border: 1px solid rgba(137, 167, 131, 0.3);
+  border-radius: 16px;
+  padding: 1.5rem;
+  text-align: center;
+}
+
+.promotion-dialog h3 {
+  font-size: 1.1rem;
+  color: rgba(255, 255, 255, 0.7);
+  margin-bottom: 1rem;
+  font-weight: 600;
+}
+
+.promotion-options {
+  display: flex;
+  gap: 0.75rem;
+}
+
+.promotion-option {
+  width: 64px;
+  height: 64px;
+  border-radius: 12px;
+  border: 2px solid rgba(255, 255, 255, 0.1);
+  background: rgba(255, 255, 255, 0.05);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.2s;
+  padding: 8px;
+}
+
+.promotion-option:hover {
+  border-color: #89a783;
+  background: rgba(137, 167, 131, 0.15);
+  transform: scale(1.1);
+}
+
+.promotion-option svg {
+  width: 100%;
+  height: 100%;
+}
+
+/* Board Customizer */
+.customizer-panel {
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 12px;
+  padding: 1rem;
+}
+
+.customizer-title {
+  font-size: 0.8rem;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  color: rgba(255, 255, 255, 0.4);
+  margin-bottom: 0.75rem;
+  font-weight: 600;
+}
+
+.theme-options {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+
+.theme-swatch {
+  display: flex;
+  border-radius: 6px;
+  overflow: hidden;
+  cursor: pointer;
+  border: 2px solid transparent;
+  transition: all 0.2s;
+  width: 40px;
+  height: 24px;
+}
+
+.theme-swatch.active {
+  border-color: #89a783;
+  box-shadow: 0 0 8px rgba(137, 167, 131, 0.3);
+}
+
+.theme-swatch:hover {
+  transform: scale(1.1);
+}
+
+.theme-swatch-half {
+  flex: 1;
+}
+
+.piece-theme-options {
+  display: flex;
+  gap: 0.5rem;
+}
+
+.piece-theme-btn {
+  padding: 0.3rem 0.7rem;
+  border-radius: 6px;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  background: rgba(255, 255, 255, 0.03);
+  color: rgba(255, 255, 255, 0.6);
+  cursor: pointer;
+  font-family: inherit;
+  font-size: 0.75rem;
+  transition: all 0.2s;
+}
+
+.piece-theme-btn.active {
+  border-color: #89a783;
+  color: #89a783;
+  background: rgba(137, 167, 131, 0.1);
+}
+
+.piece-theme-btn:hover {
+  border-color: rgba(137, 167, 131, 0.5);
+}
+
+/* Responsive */
+@media (max-width: 900px) {
+  .chess-game-container {
+    flex-direction: column;
+    align-items: center;
+  }
+
+  .chess-side-panel {
+    width: 100%;
+    max-width: 440px;
+  }
+
+  .chess-board.size-md {
+    width: min(440px, 92vw);
+    height: min(440px, 92vw);
+  }
+
+  .chess-board.size-lg {
+    width: min(440px, 92vw);
+    height: min(440px, 92vw);
+  }
+}
+
+@media (max-width: 480px) {
+  .chess-page {
+    padding: 70px 0.5rem 20px;
+  }
+
+  .chess-board.size-md,
+  .chess-board.size-sm {
+    width: min(360px, 95vw);
+    height: min(360px, 95vw);
+  }
+
+  .promotion-option {
+    width: 52px;
+    height: 52px;
+  }
+
+  .chess-timer {
+    font-size: 1rem;
+  }
+}
+
+/* Scrollbar for move history */
+.move-history::-webkit-scrollbar {
+  width: 4px;
+}
+
+.move-history::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.move-history::-webkit-scrollbar-thumb {
+  background: rgba(137, 167, 131, 0.3);
+  border-radius: 2px;
+}
+
+.move-history::-webkit-scrollbar-thumb:hover {
+  background: rgba(137, 167, 131, 0.5);
+}
+
+/* Error / info messages */
+.chess-error {
+  color: #ff5050;
+  font-size: 0.85rem;
+  text-align: center;
+  padding: 0.5rem;
+}
+
+.chess-info {
+  color: rgba(255, 255, 255, 0.5);
+  font-size: 0.85rem;
+  text-align: center;
+}
+
+/* Drag and Drop */
+.chess-drag-ghost {
+  transition: none;
+}
+
+.chess-drag-ghost .chess-piece {
+  width: 100%;
+  height: 100%;
+  transform: scale(1.15);
+}
+
+.chess-square.drag-over {
+  box-shadow: inset 0 0 0 3px rgba(137, 167, 131, 0.6);
+}
+
+.chess-board-wrapper {
+  touch-action: none;
+  user-select: none;
+  -webkit-user-select: none;
+}
+
+.chess-piece {
+  transition: opacity 0.15s ease;
+}
+
+.chess-piece.dragging {
+  opacity: 1;
+}
+
+/* Board texture overlay for image-based boards */
+.chess-board[style*="background-image"] .chess-square {
+  background-color: transparent !important;
+}
+
+/* AI thinking indicator */
+.ai-thinking {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.5rem 1rem;
+  background: rgba(137, 167, 131, 0.1);
+  border: 1px solid rgba(137, 167, 131, 0.2);
+  border-radius: 8px;
+  font-size: 0.8rem;
+  color: #89a783;
+}
+
+.ai-thinking-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: #89a783;
+  animation: aiPulse 1.4s ease-in-out infinite;
+}
+
+.ai-thinking-dot:nth-child(2) {
+  animation-delay: 0.2s;
+}
+
+.ai-thinking-dot:nth-child(3) {
+  animation-delay: 0.4s;
+}
+
+@keyframes aiPulse {
+
+  0%,
+  100% {
+    opacity: 0.3;
+    transform: scale(0.8);
+  }
+
+  50% {
+    opacity: 1;
+    transform: scale(1.2);
+  }
+}
+
+/* Captured Pieces Panel */
+.captured-panel {
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 12px;
+  padding: 0.75rem 1rem;
+}
+
+.captured-title {
+  font-size: 0.8rem;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  color: rgba(255, 255, 255, 0.4);
+  margin-bottom: 0.5rem;
+  font-weight: 600;
+}
+
+.captured-section {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  min-height: 28px;
+}
+
+.captured-section+.captured-section {
+  margin-top: 0.35rem;
+  padding-top: 0.35rem;
+  border-top: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+.captured-label {
+  font-size: 1rem;
+  width: 20px;
+  text-align: center;
+  flex-shrink: 0;
+}
+
+.captured-row {
+  flex: 1;
+  display: flex;
+  align-items: center;
+}
+
+.captured-pieces-icons {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 1px;
+}
+
+.captured-piece-icon {
+  width: 22px;
+  height: 22px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  opacity: 0.8;
+}
+
+.captured-piece-icon img {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  filter: drop-shadow(0 1px 2px rgba(0, 0, 0, 0.4));
+}
+
+.material-advantage {
+  font-size: 0.7rem;
+  font-weight: 700;
+  color: #89a783;
+  background: rgba(137, 167, 131, 0.15);
+  padding: 0.1rem 0.4rem;
+  border-radius: 4px;
+  flex-shrink: 0;
+}

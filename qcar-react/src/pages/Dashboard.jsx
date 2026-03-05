@@ -6,7 +6,7 @@ import { collection, query, where, onSnapshot, addDoc, deleteDoc, doc, getDocs, 
 import {
     MessageSquare, FolderKanban, Clock,
     Send, LogOut, Video, CheckSquare, Book, Atom, Settings,
-    Plus, ChevronDown, Folder, Users, UserPlus, UserMinus, Check, Home, Search, GripHorizontal, Sun, Moon
+    Plus, ChevronDown, Folder, Users, UserPlus, UserMinus, Check, Home, Search, GripHorizontal, Sun, Moon, Gamepad2
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 
@@ -462,6 +462,14 @@ const Dashboard = () => {
                     >
                         <span className="text-[10px] md:text-xs font-bold uppercase hidden sm:block">Chat</span>
                         <MessageSquare size={20} className="w-5 h-5" />
+                    </button>
+                    <button
+                        onClick={() => navigate('/games')}
+                        className="p-3 md:p-4 flex-1 sm:flex-none justify-center bg-[#0d0d0d] border border-zinc-800 rounded-2xl md:rounded-3xl text-zinc-600 hover:text-emerald-400 hover:border-emerald-500/30 transition flex items-center gap-2"
+                        title="Games"
+                    >
+                        <span className="text-[10px] md:text-xs font-bold uppercase hidden sm:block">Games</span>
+                        <Gamepad2 size={20} className="w-5 h-5" />
                     </button>
 
                     <button
