@@ -53,16 +53,14 @@ const TeamModal = ({ profile, onClose }) => {
                 <button
                     onClick={onClose}
                     style={{
-                        position: 'sticky', top: '10px', left: '100%',
-                        transform: 'translateX(10px)',
-                        background: 'rgba(10,10,10,0.8)',
-                        backdropFilter: 'blur(4px)',
+                        position: 'absolute', top: '10px', right: '10px',
+                        background: 'rgba(10,10,10,0.85)',
+                        backdropFilter: 'blur(6px)',
                         borderRadius: '50%', width: '40px', height: '40px',
-                        border: '1px solid rgba(255,255,255,0.1)',
-                        color: '#fff', fontSize: '24px', cursor: 'pointer',
+                        border: '1px solid rgba(255,255,255,0.12)',
+                        color: '#fff', fontSize: '22px', cursor: 'pointer',
                         display: 'flex', alignItems: 'center', justifyContent: 'center',
-                        zIndex: 10, float: 'right',
-                        marginTop: '-20px', marginRight: '-20px'
+                        zIndex: 1101
                     }}
                 >&times;</button>
 

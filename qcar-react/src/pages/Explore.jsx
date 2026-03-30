@@ -1,50 +1,42 @@
 import { useEffect, useRef, useState, useCallback } from 'react';
-import { Link } from 'react-router-dom';
 import * as THREE from 'three';
-import { GoogleGenerativeAI } from '@google/generative-ai';
-import { createOffice, TEAM_MEMBERS, COFFEE_POS, DIALOGUE_OPTIONS, pickActivity, getActivityLabel } from './ExploreScene';
+import { createOffice, TEAM_MEMBERS, COFFEE_POS, pickActivity, getActivityLabel } from './ExploreScene';
 import '../styles/Explore.css';
 
-// ── Gemini API with retry ───────────────────────────────────────────────────────
-const GEMINI_API_KEY = 'AIzaSyCnW3EIJoTrB6ueUqi2DHNkYMl3RFBMFiI';
-const genAI = new GoogleGenerativeAI(GEMINI_API_KEY);
+const GEMINI_API_KEY = 'AIzaSyAtdxlbrpM-QSZoA4-sdu5yZhsauUL2yYY';
+const GEMINI_MODELS = ['gemini-1.5-flash', 'gemini-1.5-flash-8b', 'gemini-2.0-flash'];
 
-async function geminiChat(prompt, retries = 3) {
-    for (let i = 0; i < retries; i++) {
-        try {
-            const model = genAI.getGenerativeModel({ model: 'gemini-2.0-flash' });
-            const result = await model.generateContent(prompt);
-            return result.response.text();
-        } catch (err) {
-            if (err.message?.includes('429') && i < retries - 1) {
-                await new Promise(r => setTimeout(r, Math.pow(2, i + 1) * 1000 + Math.random() * 1000));
-                continue;
-            }
-            throw err;
-        }
+async function callGemini(model, prompt) {
+    const url = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${GEMINI_API_KEY}`;
+    const res = await fetch(url, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ contents: [{ parts: [{ text: prompt }] }] })
+    });
+    if (!res.ok) {
+        const json = await res.json().catch(() => ({}));
+        const msg = json?.error?.message || res.status;
+        throw new Error(`Gemini ${res.status}: ${msg}`);
     }
+    const data = await res.json();
+    const text = data?.candidates?.[0]?.content?.parts?.[0]?.text;
+    if (!text) throw new Error('Empty response from Gemini');
+    return text;
 }
 
-// Fallback responses
-const FALLBACKS = {
-    hassan: ["Let me think about that with precision... The answer lies in the structure of the problem itself.", "As Wittgenstein said, the limits of my language mean the limits of my world. But let me try to expand both."],
-    raja: ["HAHA okay so listen — I asked my rubber duck about this and even HE was confused!", "Bro you're asking ME? I once tried to explain quantum mechanics using a pizza menu. Let me think..."],
-    vikas: ["Good question! Here, have some chai while I think... okay so basically...", "I spent three hours on something similar last week. Let me break it down simply for you."],
-    lakshya: ["*sigh* Nothing matters in the grand scheme... but I suppose I can answer.", "The universe is indifferent to our curiosity. Yet here I am, answering. What a time to exist."],
-    nishith: ["Okay okay WAIT — this is like that scene from Interstellar but make it academia 😂", "Bro I literally made a meme about this yesterday. Hold on —"],
-    suraj: ["Oh I actually wrote a script for this! Well, sort of. Let me explain the logic...", "That's a coding problem in disguise. Give me 5 minutes and a terminal."],
-    abhinav: ["Oh wow! *puts down yoghurt spoon* I actually just read about this!", "Wait let me check my notes... okay so from what I understand..."],
-};
-
-const GREETINGS = {
-    hassan: "Ah. Come in. I was working through a proof — but precision requires breaks. What's on your mind?",
-    raja: "YOOOO what's good!! Sit down — wait that's Vikas's chair, just stand. What's up? 😂",
-    vikas: "Hey! Perfect timing, I just made chai in my head. Virtual cup? What can I help with?",
-    lakshya: "*sigh* A visitor. The void has sent you my way. What do you want? Not that anything matters.",
-    nishith: "LADIES AND GENTLEMEN, WE HAVE A VISITOR! 🎉 Welcome to the show!",
-    suraj: "Hey! One sec... *typing furiously* ...okay done, just pushed a commit. What's going on?",
-    abhinav: "Hi!! *waves with yoghurt spoon* Sorry about the mess, my plants needed watering. What's up? 🌱",
-};
+async function geminiChat(prompt) {
+    let lastErr = null;
+    for (const model of GEMINI_MODELS) {
+        try {
+            return await callGemini(model, prompt);
+        } catch (err) {
+            lastErr = err;
+            console.warn(`Gemini model ${model} failed:`, err.message);
+            await new Promise(r => setTimeout(r, 400));
+        }
+    }
+    throw lastErr || new Error('All Gemini models failed');
+}
 
 // ── Floating Text ───────────────────────────────────────────────────────────────
 function createFloatingText(text, worldPos, camera) {
@@ -86,7 +78,7 @@ const Explore = () => {
     const [isTyping, setIsTyping] = useState(false);
     const [chatHistories] = useState(() => new Map());
     const [npcActivity, setNpcActivity] = useState('');
-    const [dialogueOpts, setDialogueOpts] = useState([]);
+    // remove predefined dialogue options — use LLM responses only
 
     const chatRef = useRef(null);
     const inputRef = useRef(null);
@@ -393,10 +385,6 @@ const Explore = () => {
     useEffect(() => { if (chatRef.current) chatRef.current.scrollTop = chatRef.current.scrollHeight; }, [messages, isTyping]);
 
     // ── Chat ────────────────────────────────────────────────────────────────────
-    const getRandomOptions = useCallback((npcId) => {
-        const all = DIALOGUE_OPTIONS[npcId] || [];
-        return [...all].sort(() => Math.random() - 0.5).slice(0, 4);
-    }, []);
 
     const openChat = useCallback((charGroup) => {
         const ud = charGroup.userData;
@@ -406,42 +394,39 @@ const Explore = () => {
         if (document.pointerLockElement === rendererRef.current?.domElement) document.exitPointerLock();
 
         const history = chatHistories.get(ud.id) || [];
-        const greeting = GREETINGS[ud.id] || `Hey! I'm ${ud.name}.`;
-        const initial = [{ role: 'system', text: `You walked up to ${ud.name}'s desk.` }, { role: 'npc', text: greeting }];
+        const initial = [{ role: 'system', text: `You walked up to ${ud.name}'s desk.` }];
         setMessages(history.length > 0 ? history : initial);
         if (!history.length) chatHistories.set(ud.id, initial);
-        setDialogueOpts(getRandomOptions(ud.id));
         setTimeout(() => inputRef.current?.focus(), 100);
-    }, [chatHistories, getRandomOptions]);
+    }, [chatHistories]);
 
     const closeChat = useCallback(() => {
         setChatOpen(false);
         if (chatNpc) chatHistories.set(chatNpc.id, messages);
         setChatNpc(null);
         currentCharRef.current = null;
-        setDialogueOpts([]);
     }, [chatNpc, messages, chatHistories]);
 
     const askQuestion = useCallback(async (question) => {
         if (!question.trim() || isTyping || !chatNpc) return;
         const newMsgs = [...messages, { role: 'user', text: question }];
-        setMessages(newMsgs); setIsTyping(true); setDialogueOpts([]);
+        setMessages(newMsgs); setIsTyping(true);
 
         try {
             const ctx = newMsgs.filter(m => m.role !== 'system').map(m => `${m.role === 'user' ? 'User' : chatNpc.name}: ${m.text}`).join('\n');
-            const prompt = `${chatNpc.personality}\n\nConversation so far:\n${ctx}\n\n${chatNpc.name}'s response:`;
-            const response = await geminiChat(prompt);
+            const prompt = `${chatNpc.personality || ''}\n\nConversation so far:\n${ctx}\n\n${chatNpc.name}'s response:`;
+            const response = await geminiChat(prompt, 2);
             const updated = [...newMsgs, { role: 'npc', text: response }];
             setMessages(updated); chatHistories.set(chatNpc.id, updated);
-        } catch {
-            const fbs = FALLBACKS[chatNpc.id] || ["Let me think about that..."];
-            const fb = [...newMsgs, { role: 'npc', text: fbs[Math.floor(Math.random() * fbs.length)] }];
+        } catch (err) {
+            console.error('Chat error:', err);
+            const reason = err?.message ? ` (${err.message.split('\n')[0].slice(0,120)})` : '';
+            const fb = [...newMsgs, { role: 'npc', text: `Sorry, I couldn't get a response right now.${reason}` }];
             setMessages(fb); chatHistories.set(chatNpc.id, fb);
         } finally {
             setIsTyping(false);
-            if (chatNpc) setDialogueOpts(getRandomOptions(chatNpc.id));
         }
-    }, [isTyping, chatNpc, messages, chatHistories, getRandomOptions]);
+    }, [isTyping, chatNpc, messages, chatHistories]);
 
     const sendMessage = useCallback(() => {
         if (!inputText.trim()) return;
@@ -463,21 +448,20 @@ const Explore = () => {
             {!loading && (
                 <div className="explore-hud">
                     {!chatOpen && (
-                        <>
-                            <div className="explore-info-panel">
-                                <h2>QCAR Office</h2>
-                                <p>Use <kbd>WASD</kbd> to move around</p>
-                                <p>Arrow keys or mouse to look</p>
-                                <p>Press <kbd>E</kbd> to interact</p>
-                                <p>Press <kbd>SPACE</kbd> to dance</p>
-                                <p>Press <kbd>ESC</kbd> to close / release mouse</p>
-                                <p style={{ opacity: 0.7, marginTop: 8 }}>💡 Click to lock mouse for looking</p>
-                            </div>
-                            <div className="explore-minimap"><canvas ref={minimapRef} /></div>
-                        </>
+                        <div className="explore-info-panel">
+                            <h2>QCAR Office</h2>
+                            <p>Use <kbd>WASD</kbd> to move around</p>
+                            <p>Arrow keys or mouse to look</p>
+                            <p>Press <kbd>E</kbd> to interact</p>
+                            <p>Press <kbd>SPACE</kbd> to dance</p>
+                            <p>Press <kbd>ESC</kbd> to close / release mouse</p>
+                            <p style={{ opacity: 0.7, marginTop: 8 }}>💡 Click to lock mouse for looking</p>
+                        </div>
                     )}
-                    <Link to="/" className="explore-back-btn">← EXIT</Link>
-                    {nearNpc && !chatOpen && (
+                    <div className="explore-minimap" style={{ display: chatOpen ? 'none' : 'block' }}>
+                        <canvas ref={minimapRef} />
+                    </div>
+{nearNpc && !chatOpen && (
                         <div className="explore-interact-prompt">
                             Press E to talk to {nearNpc.userData?.name || nearNpc.name}
                         </div>
@@ -489,13 +473,7 @@ const Explore = () => {
                                 {messages.map((msg, i) => (<div key={i} className={`chat-msg ${msg.role}`}>{msg.text}</div>))}
                                 {isTyping && <div className="chat-msg npc"><div className="typing-dots"><span /><span /><span /></div></div>}
                             </div>
-                            {!isTyping && dialogueOpts.length > 0 && (
-                                <div className="explore-dialogue-options">
-                                    {dialogueOpts.map((opt, i) => (
-                                        <div key={i} className="dialogue-option" onClick={() => askQuestion(opt)}>{opt}</div>
-                                    ))}
-                                </div>
-                            )}
+                            {/* No predefined options — users ask free-form questions only */}
                             <div className="custom-question-area">
                                 <p className="chat-divider">━━━ Or ask your own question ━━━</p>
                                 <input ref={inputRef} type="text" value={inputText} onChange={e => setInputText(e.target.value)}

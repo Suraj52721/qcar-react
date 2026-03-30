@@ -5,6 +5,7 @@ import { onAuthStateChanged } from 'firebase/auth';
 import { motion, AnimatePresence } from 'framer-motion';
 import EmojiPicker from 'emoji-picker-react';
 import { Send, Smile, Plus } from 'lucide-react';
+import { queryGroq } from '../../lib/groqChat';
 
 
 const REACTION_OPTIONS = ['❤️', '👍', '😂', '😮', '😢', '🔥'];
@@ -57,6 +58,27 @@ const Chat = () => {
         setShowEmojiPicker(false);
 
         try {
+            // Start GROQ request immediately (do not await) so the bot reply can be added faster
+            queryGroq(messageToSend)
+                .then(async (botReply) => {
+                    if (!botReply) return;
+                    try {
+                        await addDoc(collection(db, 'messages'), {
+                            text: botReply,
+                            sender: 'GroqBot',
+                            senderUid: 'groq-bot',
+                            createdAt: serverTimestamp(),
+                            reactions: {}
+                        });
+                    } catch (err) {
+                        console.error('Error adding bot reply to Firestore:', err);
+                    }
+                })
+                .catch(err => {
+                    console.error('GROQ API error:', err);
+                });
+
+            // Add the user's message to Firestore (await to ensure it appears in the chat)
             await addDoc(collection(db, 'messages'), {
                 text: messageToSend,
                 sender: currentUser.email || 'Anonymous',
