@@ -12,6 +12,7 @@ import Dashboard from './pages/Dashboard';
 import ChatPage from './pages/ChatPage';
 import Games from './pages/Games';
 import ChessGamePage from './pages/ChessGame';
+import Explore from './pages/Explore';
 import { GlobalNotificationProvider } from './components/GlobalNotificationProvider';
 import './styles/global.css';
 
@@ -30,6 +31,7 @@ function App() {
               <Route path="games" element={<Games />} />
               <Route path="games/chess" element={<ChessGamePage />} />
               <Route path="games/chess/:gameId" element={<ChessGamePage />} />
+              <Route path="explore" element={<Explore />} />
             </Route>
             <Route path="/login" element={<Login />} />
             <Route path="/dashboard" element={
